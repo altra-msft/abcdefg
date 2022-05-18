@@ -197,6 +197,13 @@
 							"type": "PipelineReference"
 						},
 						"parameters": {}
+					},
+					{
+						"pipelineReference": {
+							"referenceName": "minsk",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
 					}
 				],
 				"type": "ScheduleTrigger",
@@ -210,7 +217,8 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline2')]"
+				"[concat(variables('factoryId'), '/pipelines/pipeline2')]",
+				"[concat(variables('factoryId'), '/pipelines/minsk')]"
 			]
 		},
 		{
@@ -242,6 +250,32 @@
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/pipeline3')]"
 			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/minsk')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Wait1",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 1
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": []
 		}
 	]
 }
