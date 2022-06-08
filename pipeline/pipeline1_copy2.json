@@ -28,6 +28,12 @@
 					"variableName": "jerry",
 					"value": "mouse"
 				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [],
+				"userProperties": []
 			}
 		],
 		"policy": {
