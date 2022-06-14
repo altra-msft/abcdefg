@@ -41,6 +41,16 @@
 				"duration": "30.00:00:00"
 			}
 		},
+		"parameters": {
+			"sakura": {
+				"type": "string",
+				"defaultValue": "kinomoto"
+			},
+			"usagi": {
+				"type": "string",
+				"defaultValue": "tsukimono"
+			}
+		},
 		"variables": {
 			"jerry": {
 				"type": "String",
