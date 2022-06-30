@@ -7,6 +7,38 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "abcdefghijkl"
 		},
+		"AzureBlobStorage1_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
+		},
+		"custom events_properties_pipeline1_copy2_parameters_sakura": {
+			"type": "string",
+			"defaultValue": "cards"
+		},
+		"custom events_properties_pipeline1_copy2_parameters_usagi": {
+			"type": "string",
+			"defaultValue": "moon"
+		},
+		"custom events_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/1e42591f-1f0c-4c5a-b7f2-a268f6105ec5/resourceGroups/ADF/providers/Microsoft.EventGrid/topics/customEventDemo"
+		},
+		"im triggered_properties_pipeline1_copy2_parameters_sakura": {
+			"type": "string",
+			"defaultValue": "card"
+		},
+		"im triggered_properties_pipeline1_copy2_parameters_usagi": {
+			"type": "string",
+			"defaultValue": "moon"
+		},
+		"fakeTodo_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://jsonplaceholder.typicode.com/posts/1"
+		},
+		"binanceRest_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -33,10 +65,54 @@
 				"parameters": {
 					"factoryName": {
 						"value": "[parameters('factoryName')]"
+					},
+					"AzureBlobStorage1_connectionString": {
+						"value": "[parameters('AzureBlobStorage1_connectionString')]"
+					},
+					"fakeTodo_properties_typeProperties_url": {
+						"value": "[parameters('fakeTodo_properties_typeProperties_url')]"
+					},
+					"binanceRest_properties_typeProperties_url": {
+						"value": "[parameters('binanceRest_properties_typeProperties_url')]"
+					},
+					"custom events_properties_pipeline1_copy2_parameters_sakura": {
+						"value": "[parameters('custom events_properties_pipeline1_copy2_parameters_sakura')]"
+					},
+					"custom events_properties_pipeline1_copy2_parameters_usagi": {
+						"value": "[parameters('custom events_properties_pipeline1_copy2_parameters_usagi')]"
+					},
+					"custom events_properties_typeProperties_scope": {
+						"value": "[parameters('custom events_properties_typeProperties_scope')]"
+					},
+					"im triggered_properties_pipeline1_copy2_parameters_sakura": {
+						"value": "[parameters('im triggered_properties_pipeline1_copy2_parameters_sakura')]"
+					},
+					"im triggered_properties_pipeline1_copy2_parameters_usagi": {
+						"value": "[parameters('im triggered_properties_pipeline1_copy2_parameters_usagi')]"
 					}
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "abcdefghijkl_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2018-02-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'abcdefghijkl_ArmTemplate_0')]"
+			]
 		}
 	]
 }
