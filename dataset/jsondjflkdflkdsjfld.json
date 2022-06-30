@@ -10,9 +10,9 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "theFile",
-				"folderPath": "tempDir",
-				"container": "tempContainer"
+				"fileName": "thefile",
+				"folderPath": "tempdir",
+				"container": "tempcontainer"
 			}
 		},
 		"schema": {}
