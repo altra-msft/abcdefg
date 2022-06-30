@@ -1,0 +1,20 @@
+{
+	"name": "jsondjflkdflkdsjfld",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage1",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"fileName": "theFile",
+				"folderPath": "tempDir",
+				"container": "tempContainer"
+			}
+		},
+		"schema": {}
+	}
+}

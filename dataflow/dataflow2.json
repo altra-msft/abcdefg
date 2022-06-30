@@ -14,7 +14,11 @@
 			],
 			"sinks": [
 				{
-					"name": "sink1"
+					"dataset": {
+						"referenceName": "jsondjflkdflkdsjfld",
+						"type": "DatasetReference"
+					},
+					"name": "czsink"
 				}
 			],
 			"transformations": [],
@@ -29,7 +33,7 @@
 				"source1 sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> sink1"
+				"     skipDuplicateMapOutputs: true) ~> czsink"
 			]
 		}
 	}
