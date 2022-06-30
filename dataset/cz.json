@@ -1,15 +1,12 @@
 {
-	"name": "RestResource1",
+	"name": "cz",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "fakeTodo",
+			"referenceName": "binanceRest",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
 		"type": "RestResource",
-		"typeProperties": {
-			"relativeUrl": "/comments"
-		},
 		"schema": []
 	}
 }
