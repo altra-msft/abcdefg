@@ -2,9 +2,9 @@
 	"name": "abcdefghijkl",
 	"properties": {
 		"globalParameters": {
-			"darksorceror": {
+			"dark": {
 				"type": "string",
-				"value": "mahinsky"
+				"value": "palladin"
 			}
 		}
 	},
