@@ -1,0 +1,12 @@
+{
+	"name": "abcdefghijkl",
+	"properties": {
+		"globalParameters": {
+			"darksorceror": {
+				"type": "string",
+				"value": "mahinsky"
+			}
+		}
+	},
+	"location": "eastus"
+}
