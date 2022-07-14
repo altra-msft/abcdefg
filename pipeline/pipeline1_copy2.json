@@ -66,6 +66,10 @@
 			"usagi": {
 				"type": "string",
 				"defaultValue": "tsukimono"
+			},
+			"light": {
+				"type": "String",
+				"defaultValue": "yagami"
 			}
 		},
 		"variables": {
@@ -78,6 +82,12 @@
 				"defaultValue": "holland"
 			},
 			"bob": {
+				"type": "String"
+			},
+			"njhbgv": {
+				"type": "Array"
+			},
+			"ford": {
 				"type": "String"
 			}
 		},
