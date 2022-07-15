@@ -11,6 +11,14 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
 		},
+		"binanceRest_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
+		},
+		"fakeTodo_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://jsonplaceholder.typicode.com/posts/1"
+		},
 		"custom events_properties_pipeline1_copy2_parameters_sakura": {
 			"type": "string",
 			"defaultValue": "cards"
@@ -30,14 +38,6 @@
 		"im triggered_properties_pipeline1_copy2_parameters_usagi": {
 			"type": "string",
 			"defaultValue": "moon"
-		},
-		"fakeTodo_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "https://jsonplaceholder.typicode.com/posts/1"
-		},
-		"binanceRest_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
 		},
 		"containerUri": {
 			"type": "string",
@@ -69,11 +69,11 @@
 					"AzureBlobStorage1_connectionString": {
 						"value": "[parameters('AzureBlobStorage1_connectionString')]"
 					},
-					"fakeTodo_properties_typeProperties_url": {
-						"value": "[parameters('fakeTodo_properties_typeProperties_url')]"
-					},
 					"binanceRest_properties_typeProperties_url": {
 						"value": "[parameters('binanceRest_properties_typeProperties_url')]"
+					},
+					"fakeTodo_properties_typeProperties_url": {
+						"value": "[parameters('fakeTodo_properties_typeProperties_url')]"
 					},
 					"custom events_properties_pipeline1_copy2_parameters_sakura": {
 						"value": "[parameters('custom events_properties_pipeline1_copy2_parameters_sakura')]"

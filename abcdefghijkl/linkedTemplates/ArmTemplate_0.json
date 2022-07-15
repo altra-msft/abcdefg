@@ -11,13 +11,13 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
 		},
-		"fakeTodo_properties_typeProperties_url": {
-			"type": "string",
-			"defaultValue": "https://jsonplaceholder.typicode.com/posts/1"
-		},
 		"binanceRest_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
+		},
+		"fakeTodo_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://jsonplaceholder.typicode.com/posts/1"
 		},
 		"custom events_properties_pipeline1_copy2_parameters_sakura": {
 			"type": "string",
@@ -44,32 +44,6 @@
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
-		{
-			"name": "[concat(parameters('factoryName'), '/minsk')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Wait1",
-						"type": "Wait",
-						"dependsOn": [],
-						"userProperties": [],
-						"typeProperties": {
-							"waitTimeInSeconds": 1
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {
-						"duration": "30.00:00:00"
-					}
-				},
-				"annotations": []
-			},
-			"dependsOn": []
-		},
 		{
 			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
@@ -177,6 +151,10 @@
 					"usagi": {
 						"type": "string",
 						"defaultValue": "tsukimono"
+					},
+					"light": {
+						"type": "String",
+						"defaultValue": "yagami"
 					}
 				},
 				"variables": {
@@ -189,6 +167,12 @@
 						"defaultValue": "holland"
 					},
 					"bob": {
+						"type": "String"
+					},
+					"njhbgv": {
+						"type": "Array"
+					},
+					"ford": {
 						"type": "String"
 					}
 				},
@@ -291,21 +275,16 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/trigger2regy')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
+			"name": "[concat(parameters('factoryName'), '/binanceRest')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
-				"runtimeState": "Stopped",
-				"pipelines": [],
-				"type": "ScheduleTrigger",
+				"type": "RestService",
 				"typeProperties": {
-					"recurrence": {
-						"frequency": "Minute",
-						"interval": 15,
-						"startTime": "2022-05-19T00:51:00",
-						"timeZone": "Atlantic Standard Time"
-					}
+					"url": "[parameters('binanceRest_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
 				}
 			},
 			"dependsOn": []
@@ -326,19 +305,109 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/binanceRest')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"name": "[concat(parameters('factoryName'), '/trigger2regy')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
-				"type": "RestService",
+				"runtimeState": "Stopped",
+				"pipelines": [],
+				"type": "ScheduleTrigger",
 				"typeProperties": {
-					"url": "[parameters('binanceRest_properties_typeProperties_url')]",
-					"enableServerCertificateValidation": true,
-					"authenticationType": "Anonymous"
+					"recurrence": {
+						"frequency": "Minute",
+						"interval": 15,
+						"startTime": "2022-05-19T00:51:00",
+						"timeZone": "Atlantic Standard Time"
+					}
 				}
 			},
 			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Json1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RestResource1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "fakeTodo",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {
+					"relativeUrl": "/comments"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/fakeTodo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/cz')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "binanceRest",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/binanceRest')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/jsondjflkdflkdsjfld')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": "thefile",
+						"folderPath": "tempdir",
+						"container": "tempcontainer"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureBlobStorage1')]"
+			]
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/custom events')]",
@@ -375,41 +444,37 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/minskthing')]",
+			"name": "[concat(parameters('factoryName'), '/im triggered')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
 			"properties": {
+				"description": "test",
 				"annotations": [],
 				"runtimeState": "Started",
 				"pipelines": [
 					{
 						"pipelineReference": {
-							"referenceName": "pipeline2",
+							"referenceName": "pipeline1_copy2",
 							"type": "PipelineReference"
 						},
-						"parameters": {}
-					},
-					{
-						"pipelineReference": {
-							"referenceName": "minsk",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
+						"parameters": {
+							"sakura": "[parameters('im triggered_properties_pipeline1_copy2_parameters_sakura')]",
+							"usagi": "[parameters('im triggered_properties_pipeline1_copy2_parameters_usagi')]"
+						}
 					}
 				],
 				"type": "ScheduleTrigger",
 				"typeProperties": {
 					"recurrence": {
 						"frequency": "Minute",
-						"interval": 5,
-						"startTime": "2022-05-18T22:01:00",
-						"timeZone": "Russian Standard Time"
+						"interval": 16,
+						"startTime": "2022-06-28T22:30:00Z",
+						"timeZone": "UTC"
 					}
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline2')]",
-				"[concat(variables('factoryId'), '/pipelines/minsk')]"
+				"[concat(variables('factoryId'), '/pipelines/pipeline1_copy2')]"
 			]
 		},
 		{
@@ -503,44 +568,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/trigger7')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline2",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					},
-					{
-						"pipelineReference": {
-							"referenceName": "minsk",
-							"type": "PipelineReference"
-						},
-						"parameters": {}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Minute",
-						"interval": 5,
-						"startTime": "2022-05-18T22:01:00",
-						"timeZone": "Russian Standard Time"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline2')]",
-				"[concat(variables('factoryId'), '/pipelines/minsk')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/trigger8')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
@@ -598,60 +625,6 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/pipeline2')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/im triggered')]",
-			"type": "Microsoft.DataFactory/factories/triggers",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"description": "test",
-				"annotations": [],
-				"runtimeState": "Started",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "pipeline1_copy2",
-							"type": "PipelineReference"
-						},
-						"parameters": {
-							"sakura": "[parameters('im triggered_properties_pipeline1_copy2_parameters_sakura')]",
-							"usagi": "[parameters('im triggered_properties_pipeline1_copy2_parameters_usagi')]"
-						}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Minute",
-						"interval": 16,
-						"startTime": "2022-06-28T22:30:00Z",
-						"timeZone": "UTC"
-					}
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/pipeline1_copy2')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/RestResource1')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "fakeTodo",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "RestResource",
-				"typeProperties": {
-					"relativeUrl": "/comments"
-				},
-				"schema": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/fakeTodo')]"
 			]
 		}
 	]

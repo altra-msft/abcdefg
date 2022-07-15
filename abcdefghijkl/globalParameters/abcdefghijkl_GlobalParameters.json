@@ -1,1 +1,6 @@
-{}
+{
+	"dark": {
+		"type": "string",
+		"value": "palladin"
+	}
+}
