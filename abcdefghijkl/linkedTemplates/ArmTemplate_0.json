@@ -64,7 +64,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"url": {
-								"value": "replace('https://api2.replace.com/api/v3/ticker/24hr','replace',pipeline().parameters.domainname)",
+								"value": "@pipeline().parameters.url",
 								"type": "Expression"
 							},
 							"method": "GET",
@@ -79,9 +79,9 @@
 					}
 				},
 				"parameters": {
-					"domainname": {
+					"url": {
 						"type": "string",
-						"defaultValue": "binance"
+						"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
 					}
 				},
 				"annotations": []
@@ -115,7 +115,14 @@
 					{
 						"name": "Set variable1",
 						"type": "SetVariable",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Web1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "jerry",
@@ -125,7 +132,14 @@
 					{
 						"name": "ForEach1",
 						"type": "ForEach",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Set variable1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"userProperties": [],
 						"typeProperties": {
 							"items": {
