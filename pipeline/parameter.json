@@ -16,7 +16,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"url": {
-						"value": "replace('https://api2.replace.com/api/v3/ticker/24hr','replace',pipeline().parameters.domainname)",
+						"value": "@pipeline().parameters.url",
 						"type": "Expression"
 					},
 					"method": "GET"
