@@ -12,7 +12,7 @@
 			},
 			{
 				"pipelineReference": {
-					"referenceName": "minsk",
+					"referenceName": "no parameter variable",
 					"type": "PipelineReference"
 				}
 			}
