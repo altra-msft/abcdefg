@@ -1,5 +1,5 @@
 {
-	"name": "pipeline1",
+	"name": "parameter",
 	"properties": {
 		"activities": [
 			{
@@ -15,7 +15,10 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"url": "https://api2.binance.com/api/v3/ticker/24hr",
+					"url": {
+						"value": "replace('https://api2.replace.com/api/v3/ticker/24hr','replace',pipeline().parameters.domainname)",
+						"type": "Expression"
+					},
 					"method": "GET"
 				}
 			}
@@ -23,6 +26,12 @@
 		"policy": {
 			"cancelAfter": {
 				"duration": "30.00:00:00"
+			}
+		},
+		"parameters": {
+			"domainname": {
+				"type": "string",
+				"defaultValue": "binance"
 			}
 		},
 		"annotations": []
