@@ -29,9 +29,9 @@
 			}
 		},
 		"parameters": {
-			"domainname": {
+			"url": {
 				"type": "string",
-				"defaultValue": "binance"
+				"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
 			}
 		},
 		"annotations": []
