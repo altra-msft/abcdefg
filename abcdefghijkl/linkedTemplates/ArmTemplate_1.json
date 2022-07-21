@@ -104,7 +104,7 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/minsk')]",
+			"name": "[concat(parameters('factoryName'), '/no parameter variable')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -121,7 +121,14 @@
 					{
 						"name": "Data flow1",
 						"type": "ExecuteDataFlow",
-						"dependsOn": [],
+						"dependsOn": [
+							{
+								"activity": "Wait1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
 						"policy": {
 							"timeout": "1.00:00:00",
 							"retry": 0,
@@ -178,7 +185,7 @@
 					},
 					{
 						"pipelineReference": {
-							"referenceName": "minsk",
+							"referenceName": "no parameter variable",
 							"type": "PipelineReference"
 						},
 						"parameters": {}
@@ -195,7 +202,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/minsk')]"
+				"[concat(variables('factoryId'), '/pipelines/no parameter variable')]"
 			]
 		},
 		{
@@ -215,7 +222,7 @@
 					},
 					{
 						"pipelineReference": {
-							"referenceName": "minsk",
+							"referenceName": "no parameter variable",
 							"type": "PipelineReference"
 						},
 						"parameters": {}
@@ -232,7 +239,7 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/pipelines/minsk')]"
+				"[concat(variables('factoryId'), '/pipelines/no parameter variable')]"
 			]
 		}
 	]

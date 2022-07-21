@@ -45,7 +45,7 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"name": "[concat(parameters('factoryName'), '/parameter')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -63,7 +63,10 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"url": "https://api2.binance.com/api/v3/ticker/24hr",
+							"url": {
+								"value": "replace('https://api2.replace.com/api/v3/ticker/24hr','replace',pipeline().parameters.domainname)",
+								"type": "Expression"
+							},
 							"method": "GET",
 							"headers": {}
 						}
@@ -73,6 +76,12 @@
 					"elapsedTimeMetric": {},
 					"cancelAfter": {
 						"duration": "30.00:00:00"
+					}
+				},
+				"parameters": {
+					"domainname": {
+						"type": "string",
+						"defaultValue": "binance"
 					}
 				},
 				"annotations": []
