@@ -11,7 +11,7 @@
 			"delay": "00:00:00",
 			"maxConcurrency": 50,
 			"retryPolicy": {
-				"intervalInSeconds": 30
+				"intervalInSeconds": 6
 			},
 			"dependsOn": []
 		}
