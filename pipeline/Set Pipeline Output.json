@@ -1,0 +1,49 @@
+{
+	"name": "Set Pipeline Output",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "food",
+					"value": ""
+				}
+			},
+			{
+				"name": "Actually Set Pipeline Output",
+				"description": "It's a Set Variable activity, but it's used to set Pipeline Output",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Set variable1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "food",
+					"value": ""
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"variables": {
+			"food": {
+				"type": "String"
+			},
+			"pipelineReturnValue": {
+				"type": "String"
+			}
+		},
+		"annotations": []
+	}
+}
