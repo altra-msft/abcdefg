@@ -9,7 +9,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "food",
-					"value": ""
+					"value": "yummy"
 				}
 			},
 			{
@@ -26,8 +26,8 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "food",
-					"value": ""
+					"variableName": "pipelineReturnValue",
+					"value": "some json object"
 				}
 			}
 		],

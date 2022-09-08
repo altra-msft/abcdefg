@@ -1,0 +1,42 @@
+{
+	"name": "Consumes Pipeline Output",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute Set Pipeline Output",
+				"type": "ExecutePipeline",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "Set Pipeline Output",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Wait1",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Execute Set Pipeline Output",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 1
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": []
+	}
+}
