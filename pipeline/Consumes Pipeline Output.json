@@ -17,6 +17,7 @@
 			},
 			{
 				"name": "Wait1",
+				"description": "edit dynamic content will be like: @activity('Execute Set Pipeline Output').pipelineOutput.time or something",
 				"type": "Wait",
 				"dependsOn": [
 					{
