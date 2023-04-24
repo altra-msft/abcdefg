@@ -8,13 +8,17 @@
 				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "food",
-					"value": "yummy"
+					"variableName": "intArray",
+					"value": [
+						0,
+						1,
+						2
+					]
 				}
 			},
 			{
 				"name": "Actually Set Pipeline Output",
-				"description": "It's a Set Variable activity, but it's used to set Pipeline Output",
+				"description": "It's a Set Variable activity, but it's used to set Pipeline Output.",
 				"type": "SetVariable",
 				"dependsOn": [
 					{
@@ -26,8 +30,8 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"variableName": "pipelineReturnValue",
-					"value": "some json object"
+					"variableName": "food",
+					"value": "delicios"
 				}
 			}
 		],
@@ -42,8 +46,18 @@
 			},
 			"pipelineReturnValue": {
 				"type": "String"
+			},
+			"intArray": {
+				"type": "Array",
+				"defaultValue": [
+					1,
+					2,
+					3
+				]
 			}
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2022-10-04T21:05:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

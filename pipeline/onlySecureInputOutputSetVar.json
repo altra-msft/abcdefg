@@ -1,0 +1,38 @@
+{
+	"name": "onlySecureInputOutputSetVar",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "boolName",
+							"value": {
+								"type": "Boolean",
+								"content": true
+							}
+						}
+					],
+					"setSystemVariable": true
+				},
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-04-03T21:45:27Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -17,6 +17,8 @@
 				"duration": "30.00:00:00"
 			}
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2022-06-30T22:54:56Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

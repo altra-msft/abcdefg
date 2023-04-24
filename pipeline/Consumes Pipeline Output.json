@@ -9,7 +9,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"pipeline": {
-						"referenceName": "Set Pipeline Output",
+						"referenceName": "TEST",
 						"type": "PipelineReference"
 					},
 					"waitOnCompletion": true
@@ -17,7 +17,6 @@
 			},
 			{
 				"name": "Wait1",
-				"description": "edit dynamic content will be like: @activity('Execute Set Pipeline Output').pipelineOutput.time or something",
 				"type": "Wait",
 				"dependsOn": [
 					{
@@ -29,7 +28,40 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 1
+					"waitTimeInSeconds": {
+						"value": "@activity('Execute Set Pipeline Output').output.pipelineReturnValue.key1",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Web1",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Execute Set Pipeline Output",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": {
+						"value": "@concat('https://api.genderize.io?name=', activity('Execute Set Pipeline Output').output.pipelineReturnValue.keyStr)\n",
+						"type": "Expression"
+					},
+					"method": "GET",
+					"headers": {
+						"header": "true"
+					}
 				}
 			}
 		],
@@ -38,6 +70,8 @@
 				"duration": "30.00:00:00"
 			}
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2023-01-24T03:06:39Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

@@ -34,6 +34,8 @@
 				"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
 			}
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2022-08-22T20:20:10Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

@@ -20,6 +20,8 @@
 		"folder": {
 			"name": "folder"
 		},
-		"annotations": []
-	}
+		"annotations": [],
+		"lastPublishTime": "2022-06-30T22:54:56Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
 }

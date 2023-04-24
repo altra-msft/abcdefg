@@ -1,0 +1,34 @@
+{
+	"name": "pipeline4",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "key",
+							"value": {
+								"type": "Boolean",
+								"content": true
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-04-11T00:19:13Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

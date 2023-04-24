@@ -1,0 +1,40 @@
+{
+	"name": "set exp type output",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "expKey",
+							"value": {
+								"type": "Expression",
+								"content": "@add(1,2)"
+							}
+						}
+					],
+					"setSystemVariable": true
+				},
+				"policy": {
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-03-21T17:52:38Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

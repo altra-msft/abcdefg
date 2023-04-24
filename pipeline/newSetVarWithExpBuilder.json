@@ -1,0 +1,55 @@
+{
+	"name": "newSetVarWithExpBuilder",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "boolKey",
+							"value": {
+								"type": "Boolean",
+								"content": false
+							}
+						},
+						{
+							"key": "strKey",
+							"value": {
+								"type": "String",
+								"content": "stringTest"
+							}
+						},
+						{
+							"key": "intKey",
+							"value": {
+								"type": "Int",
+								"content": 8
+							}
+						},
+						{
+							"key": "expKey",
+							"value": {
+								"type": "Expression",
+								"content": "@add(1,2)"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-01-26T21:08:01Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
