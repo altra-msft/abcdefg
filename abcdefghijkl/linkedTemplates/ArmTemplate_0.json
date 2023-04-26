@@ -26,6 +26,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "intArray",
@@ -48,6 +52,10 @@
 								]
 							}
 						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "food",
@@ -99,6 +107,10 @@
 								]
 							}
 						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -125,6 +137,10 @@
 								]
 							}
 						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -180,6 +196,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -217,6 +237,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -275,6 +299,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -288,10 +316,6 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
 						}
 					}
 				],
@@ -386,6 +410,10 @@
 								]
 							}
 						],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "jerry",
@@ -561,6 +589,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -598,6 +630,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -634,6 +670,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -647,12 +687,6 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
 						}
 					}
 				],
@@ -677,6 +711,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -714,6 +752,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -772,6 +814,10 @@
 						"name": "Set variable1",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": true,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -844,12 +890,6 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": true,
-							"secureInput": false
 						}
 					}
 				],
@@ -875,6 +915,10 @@
 						"description": "bgh",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -941,12 +985,6 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
 						}
 					},
 					{
@@ -971,6 +1009,10 @@
 						"name": "Set variable2",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": true,
+							"secureInput": false
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -984,19 +1026,16 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": true,
-							"secureInput": false
 						}
 					},
 					{
 						"name": "Set variable3",
 						"type": "SetVariable",
 						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": true
+						},
 						"userProperties": [],
 						"typeProperties": {
 							"variableName": "pipelineReturnValue",
@@ -1010,13 +1049,6 @@
 								}
 							],
 							"setSystemVariable": true
-						},
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": true
 						}
 					}
 				],
@@ -1088,7 +1120,7 @@
 						"dependsOn": [],
 						"userProperties": [],
 						"typeProperties": {
-							"waitTimeInSeconds": 25
+							"waitTimeInSeconds": 26
 						}
 					}
 				],
