@@ -8,7 +8,7 @@
 				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 26
+					"waitTimeInSeconds": 25
 				}
 			}
 		],
