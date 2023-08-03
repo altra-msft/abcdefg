@@ -1,0 +1,36 @@
+{
+	"name": "ChildPipeline2",
+	"properties": {
+		"activities": [
+			{
+				"name": "Set variable1",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "ChildReturn",
+							"value": {
+								"type": "String",
+								"content": "hello world"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"policy": {
+			"cancelAfter": {
+				"duration": "30.00:00:00"
+			}
+		},
+		"annotations": []
+	}
+}
