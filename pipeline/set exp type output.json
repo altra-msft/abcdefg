@@ -6,6 +6,10 @@
 				"name": "Set variable1",
 				"type": "SetVariable",
 				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
 				"userProperties": [],
 				"typeProperties": {
 					"variableName": "pipelineReturnValue",
@@ -19,12 +23,6 @@
 						}
 					],
 					"setSystemVariable": true
-				},
-				"policy": {
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
 				}
 			}
 		],

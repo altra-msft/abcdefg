@@ -1,5 +1,5 @@
 {
-	"name": "pipeline4",
+	"name": "ChildPipeline",
 	"properties": {
 		"activities": [
 			{
@@ -15,10 +15,10 @@
 					"variableName": "pipelineReturnValue",
 					"value": [
 						{
-							"key": "key",
+							"key": "ChildReturn",
 							"value": {
-								"type": "Boolean",
-								"content": true
+								"type": "String",
+								"content": "hello world"
 							}
 						}
 					],
@@ -32,7 +32,7 @@
 			}
 		},
 		"annotations": [],
-		"lastPublishTime": "2023-04-11T00:19:13Z"
+		"lastPublishTime": "2023-08-02T17:54:16Z"
 	},
 	"type": "Microsoft.DataFactory/factories/pipelines"
 }
