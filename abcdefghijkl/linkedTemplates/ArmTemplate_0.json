@@ -6,16 +6,134 @@
 			"type": "string",
 			"metadata": "Data Factory name",
 			"defaultValue": "abcdefghijkl"
-		},
-		"AzureBlobStorage1_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'AzureBlobStorage1'"
 		}
 	},
 	"variables": {
 		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
 	},
 	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/CHILD RETURN VALUE')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "pipelineReturnValue",
+							"value": [
+								{
+									"key": "ChildReturn",
+									"value": {
+										"type": "String",
+										"content": "hello world"
+									}
+								}
+							],
+							"setSystemVariable": true
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-02T17:43:04Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ChildPipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "pipelineReturnValue",
+							"value": [
+								{
+									"key": "ChildReturn",
+									"value": {
+										"type": "String",
+										"content": "hello world"
+									}
+								}
+							],
+							"setSystemVariable": true
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-08-02T17:54:16Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ChildPipeline2')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "pipelineReturnValue",
+							"value": [
+								{
+									"key": "ChildReturn",
+									"value": {
+										"type": "String",
+										"content": "hello world"
+									}
+								}
+							],
+							"setSystemVariable": true
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": []
+		},
 		{
 			"name": "[concat(parameters('factoryName'), '/Set Pipeline Output')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
@@ -224,6 +342,98 @@
 				},
 				"annotations": [],
 				"lastPublishTime": "2023-01-27T00:42:16Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/fastWait')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Wait1",
+						"type": "Wait",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"waitTimeInSeconds": 5
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-05-03T17:15:30Z"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/foreach with wait')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "ForEach1",
+						"type": "ForEach",
+						"dependsOn": [],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@createArray(1,2,3)",
+								"type": "Expression"
+							},
+							"isSequential": false,
+							"activities": [
+								{
+									"name": "Wait1",
+									"type": "Wait",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"waitTimeInSeconds": 10
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Set variable1",
+						"type": "SetVariable",
+						"dependsOn": [],
+						"policy": {
+							"secureOutput": true,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"variableName": "pipelineReturnValue",
+							"value": [
+								{
+									"key": "var",
+									"value": {
+										"type": "String",
+										"content": "hello"
+									}
+								}
+							],
+							"setSystemVariable": true
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {
+						"duration": "30.00:00:00"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2023-06-07T17:39:07Z"
 			},
 			"dependsOn": []
 		},
@@ -801,350 +1011,6 @@
 				},
 				"annotations": [],
 				"lastPublishTime": "2023-02-08T11:34:01Z"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/setvar objkey')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Set variable1",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": true,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "pipelineReturnValue",
-							"value": [
-								{
-									"key": "objKeyNested",
-									"value": {
-										"type": "Object",
-										"content": [
-											{
-												"key": "innerKey1",
-												"value": {
-													"type": "String",
-													"content": "val1"
-												}
-											},
-											{
-												"key": "innerKey2",
-												"value": {
-													"type": "String",
-													"content": "val2"
-												}
-											}
-										]
-									}
-								},
-								{
-									"key": "objKeyReal",
-									"value": {
-										"type": "Object",
-										"content": [
-											{
-												"key": "innerKey1",
-												"value": {
-													"type": "String",
-													"content": "val1"
-												}
-											},
-											{
-												"key": "innerKey2",
-												"value": {
-													"type": "String",
-													"content": "val2"
-												}
-											}
-										]
-									}
-								},
-								{
-									"key": "objKeyAgain",
-									"value": {
-										"type": "Object",
-										"content": [
-											{
-												"key": "objNest1",
-												"value": {
-													"type": "String",
-													"content": "val1"
-												}
-											},
-											{
-												"key": "objNest2",
-												"value": {
-													"type": "Int",
-													"content": "3"
-												}
-											}
-										]
-									}
-								}
-							],
-							"setSystemVariable": true
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {
-						"duration": "30.00:00:00"
-					}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-03-21T21:29:55Z"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/setvar objkey2')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Set variable1",
-						"description": "bgh",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "pipelineReturnValue",
-							"value": [
-								{
-									"key": "objKey",
-									"value": {
-										"type": "Object",
-										"content": [
-											{
-												"key": "objNest1",
-												"value": {
-													"type": "String",
-													"content": "val1"
-												}
-											},
-											{
-												"key": "objNest2",
-												"value": {
-													"type": "Int",
-													"content": 3
-												}
-											}
-										]
-									}
-								},
-								{
-									"key": "objKey2",
-									"value": {
-										"type": "Object",
-										"content": [
-											{
-												"key": "objNest22",
-												"value": {
-													"type": "String",
-													"content": "val1"
-												}
-											},
-											{
-												"key": "objNest23",
-												"value": {
-													"type": "Int",
-													"content": 5
-												}
-											}
-										]
-									}
-								},
-								{
-									"key": "arrKey",
-									"value": {
-										"type": "Array",
-										"content": [
-											{
-												"type": "String",
-												"content": "sally"
-											},
-											{
-												"type": "String",
-												"content": "hinata"
-											}
-										]
-									}
-								}
-							],
-							"setSystemVariable": true
-						}
-					},
-					{
-						"name": "Web1",
-						"type": "WebActivity",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"url": "https://api.genderize.io?name=harry",
-							"method": "GET",
-							"headers": {}
-						}
-					},
-					{
-						"name": "Set variable2",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": true,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "pipelineReturnValue",
-							"value": [
-								{
-									"key": "boolkey",
-									"value": {
-										"type": "Boolean",
-										"content": true
-									}
-								}
-							],
-							"setSystemVariable": true
-						}
-					},
-					{
-						"name": "Set variable3",
-						"type": "SetVariable",
-						"dependsOn": [],
-						"policy": {
-							"secureOutput": false,
-							"secureInput": true
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"variableName": "pipelineReturnValue",
-							"value": [
-								{
-									"key": "boolkey3",
-									"value": {
-										"type": "Boolean",
-										"content": true
-									}
-								}
-							],
-							"setSystemVariable": true
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {
-						"duration": "30.00:00:00"
-					}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-03-22T17:24:46Z"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/variable')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Web1",
-						"type": "WebActivity",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "7.00:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"url": {
-								"value": "@variables('url')",
-								"type": "Expression"
-							},
-							"method": "GET",
-							"headers": {}
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {
-						"duration": "30.00:00:00"
-					}
-				},
-				"variables": {
-					"url": {
-						"type": "String",
-						"defaultValue": "https://api2.binance.com/api/v3/ticker/24hr"
-					}
-				},
-				"annotations": [],
-				"lastPublishTime": "2022-08-22T20:20:10Z"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/waitttt')]",
-			"type": "Microsoft.DataFactory/factories/pipelines",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"activities": [
-					{
-						"name": "Wait1",
-						"type": "Wait",
-						"dependsOn": [],
-						"userProperties": [],
-						"typeProperties": {
-							"waitTimeInSeconds": 26
-						}
-					}
-				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {
-						"duration": "30.00:00:00"
-					}
-				},
-				"annotations": [],
-				"lastPublishTime": "2023-04-20T17:34:00Z"
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/AzureBlobStorage1')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureBlobStorage",
-				"typeProperties": {
-					"connectionString": "[parameters('AzureBlobStorage1_connectionString')]"
-				}
 			},
 			"dependsOn": []
 		}
