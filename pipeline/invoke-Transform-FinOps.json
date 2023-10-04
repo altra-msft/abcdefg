@@ -1,0 +1,2071 @@
+{
+    "name": "invoke-Transform-FinOps",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch Dataflow",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "LocalPipelineTriggerTime",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "If processDelta",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    },
+                    {
+                        "activity": "Set stagingDirectory for delta load",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Set rawDirectory",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.pipelineParameters.dataflow",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "FinOps_Generic_Raw_to_Staging",
+                            "activities": [
+                                {
+                                    "name": "FinOps_Raw_to_Staging_Delta",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "1.00:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "FinOps_Generic_Raw_to_Staging",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(\n        split(\n            pipeline().parameters.pipelineParameters.rawDirectory,'/')\n            ,1\n        )\n        ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LocalPipelineTriggerTime": {
+                                                    "value": "'@{variables('_LocalPipelineTriggerTime')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawEntity": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawEntity}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadWorkspace": {
+                                                    "value": "'@{pipeline().DataFactory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadSource": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.sourceName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipeline": {
+                                                    "value": "'@{pipeline().Pipeline}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineRunId": {
+                                                    "value": "'@{pipeline().RunId}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTriggerId": {
+                                                    "value": "'@{pipeline().TriggerId}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTriggerType": {
+                                                    "value": "'@{pipeline().TriggerType}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTriggerTime": {
+                                                    "value": "'@{pipeline().TriggerTime}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTriggeredByPipeline": {
+                                                    "value": "'@{pipeline()?.TriggeredByPipelineName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTriggeredByRunId": {
+                                                    "value": "'@{pipeline()?.TriggeredByPipelineRunId}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LoadPipelineTrigger": {
+                                                    "value": "'@{pipeline().TriggerName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "localTimeZone": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.localTimeZone}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "localiseDateTimeColumns": {
+                                                    "value": "@bool(pipeline().parameters.pipelineParameters.localiseDateTime)",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "sourceEntity": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkEntity": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DebtorTransactionType",
+                            "activities": [
+                                {
+                                    "name": "DebtorTransactionType",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_debtor_transaction_type",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "srsanalysisenums": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "getMaxSurrogateKey": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimDebtorTransactionTypetarget": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimDebtorTransactionType": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimDebtorTransactionTypeinsert": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "None",
+                                        "cacheSinks": {
+                                            "firstRowOnly": true
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FactDebtorTransactions",
+                            "activities": [
+                                {
+                                    "name": "FactDebtorTransactions",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "fact_debtor_transactions",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTransrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTransrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTransrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTablerawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTablerawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "GeneralJournalEntryrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).GeneralJournalEntryrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "GeneralJournalEntryrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).GeneralJournalEntryrawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtorDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_debtordirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtorEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_debtorfileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtortranstypeDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).DimDebtorTransactionTypedirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtortranstypeEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).DimDebtorTransactionTypefileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "custdisputerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustDisputerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "custdisputerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustDisputerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "custtrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "ledgerjournaltrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "ledgerjournaltable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "custtable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "generaljournalentry": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "custdispute": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "factdebtortransactions": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "None",
+                                        "cacheSinks": {
+                                            "firstRowOnly": true
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_customer",
+                            "activities": [
+                                {
+                                    "name": "dim_customer",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_customer",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawEntity": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawEntity}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartytablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartytablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartytablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartytablerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LogisticsPostalAddressrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LogisticsPostalAddressrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LogisticsPostalAddressrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LogisticsPostalAddressrawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LogisticsElectronicAddressrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LogisticsElectronicAddressrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LogisticsElectronicAddressrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LogisticsElectronicAddressrawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "logisticslocationrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).logisticslocationrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "logisticslocationrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).logisticslocationrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartylocationrolerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartylocationrolerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartylocationrolerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartylocationrolerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartylocationrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartylocationrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirpartylocationrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).dirpartylocationrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmbusrelsubsegmentgrouprawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelSubSegmentGrouprawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmbusrelsubsegmentgrouprawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelSubSegmentGrouprawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmbusrelsegmentgrouprawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelSegmentGrouprawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmbusrelsegmentgrouprawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelSegmentGrouprawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "custtable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dirpartytable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "logisticspostaladdress": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "logisticselectronicaddress": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "logisticslocation": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dirpartylocationrole": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dirpartylocation": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "loadsmmbusrelsegmentgroup": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "loadsmmbusrelsubsegmentgroup": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "getMaxSurrogateKey": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimcustomertarget": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimCustomerupdate": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "dimCustomerinsert": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "None",
+                                        "cacheSinks": {
+                                            "firstRowOnly": true
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FactDebtorCollections",
+                            "activities": [
+                                {
+                                    "name": "FactDebtorCollections",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "fact_debtor_collection",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTablerawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTransrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "CustTransrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).CustTransrawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtorDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_debtordirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "debtorEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_debtorfileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "customerDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_customerdirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "customerEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).dim_customerfileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "custaging": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "custtrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "custtable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "factdebtorcollections": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "None",
+                                        "cacheSinks": {
+                                            "firstRowOnly": true
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_rfc_reason",
+                            "activities": [
+                                {
+                                    "name": "dim_rfc_reason",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_rfc_reason",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFilename": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "ReturnActionDefaults": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimRFCReason": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FactReceiptLog",
+                            "activities": [
+                                {
+                                    "name": "FactReceiptLog",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "fact_receipt_log",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendInvoiceJourManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendInvoiceJourrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendInvoiceJourManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendInvoiceJourrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendInvoiceTransManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendInvoiceTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendInvoiceTransManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendInvoiceTransrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendPakingSlipTransManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendPackingSlipTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vendPakingSlipTransManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).VendPackingSlipTransrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "purchLineManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).PurchLinerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "purchLineManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).PurchLinerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "inventItemPurchSetupManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).InventItemPurchSetuprawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "inventItemPurchSetupManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).InventItemPurchSetuprawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "InventTransrawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).InventTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "InventTransrawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).InventTransrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "PurchTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "VendInvoiceJour": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "VendPackingSlipTrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "PurchLine": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "InventItemPurchSetup": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "VendInvoiceTrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "InventTrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "InventTransOrigin": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "factReceiptLog": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_supplier",
+                            "activities": [
+                                {
+                                    "name": "dim_supplier",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_supplier",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTableManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTableManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "DirPartyTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "VendTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimSupplier": {
+                                                    "linkedService": {
+                                                        "datalakeURL": "https://cartersdevdatalake.dfs.core.windows.net"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_preferred_supplier",
+                            "activities": [
+                                {
+                                    "name": "dim_preferred_supplier",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_preferred_supplier",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmBusRelChainGroupManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelChainGrouprawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "smmBusRelChainGroupManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).smmBusRelChainGrouprawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "VendTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DirPartyTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "smmBusRelChainGroup": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimPreferredSupplier": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_branch_preferred_supplier",
+                            "activities": [
+                                {
+                                    "name": "dim_branch_preferred_supplier",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_branch_preferred_supplier",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTablerawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dirPartyTablerawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).DirPartyTablerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "VendTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DirPartyTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimBranchPreferredSupplier": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_product_focus",
+                            "activities": [
+                                {
+                                    "name": "dim_product_focus",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "dim_product_focus",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "ProcurementProductAlwaysInStock": {
+                                                    "dataLakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(\n    json(pipeline().parameters.pipelineParameters.dataflowDependencies).Procurement_Product_Always_In_StockrawFileSystem\n)",
+                                                        "type": "Expression"
+                                                    },
+                                                    "directory": {
+                                                        "value": "@toLower(\n    json(pipeline().parameters.pipelineParameters.dataflowDependencies).Procurement_Product_Always_In_StockrawDirectory\n)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "ReqItemTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimProductFocus": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_department",
+                            "activities": [
+                                {
+                                    "name": "dim_department",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "department_dim",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "DirPartyTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DepartmentDim": {
+                                                    "linkedService": {
+                                                        "datalakeURL": "https://cartersdevdatalake.dfs.core.windows.net"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_glsource",
+                            "activities": [
+                                {
+                                    "name": "dim_glsource",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "gl_source_dim",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTransManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTransrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalTransManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalTransrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalNameManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalNamerawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "LedgerJournalNameManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).LedgerJournalNamerawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "LedgerJournalTable": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "LedgerJournalTrans": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "LedgerJournalName": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "DimGlSource": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "factgltransaction",
+                            "activities": [
+                                {
+                                    "name": "FactGLTransaction",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "Fact_GL_Transaction",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "GeneralJournalEntryManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).GeneralJournalEntryrawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "GeneralJournalEntryManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).GeneralJournalEntryrawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "TransactionLogManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).TransactionLograwDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "TransactionLogManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).TransactionLograwFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "GeneralJournalAccountEntry": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "GeneralJournalEntry": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "TransactionLog": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sink1": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "dim_gl_account",
+                            "activities": [
+                                {
+                                    "name": "dim_gl_account",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "gl_account_dim",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "rawFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.rawFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{variables('rawDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),1)\n    ,'/'\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        pipeline().parameters.pipelineParameters.rawFileName\n        ,'.'\n    )\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{variables('stagingDirectory')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "dataLakeModified_DateTime": {
+                                                    "value": "'@{variables('watermarkValue')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "mainAccountCategoryManifestFilePath": {
+                                                    "value": "'@{join(\n    skip(split(json(pipeline().parameters.pipelineParameters.dataflowDependencies).MainAccountCategoryrawDirectory,'/'),1)\n    ,'/'\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "mainAccountCategoryManifestFileName": {
+                                                    "value": "'@{first(\n    split(\n        json(pipeline().parameters.pipelineParameters.dataflowDependencies).MainAccountCategoryrawFileName\n        ,'.'\n    )\n)\n}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "MainAccount": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "MainAccountCategory": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sink1": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Execute invoke-Transform-FinOps1",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "invoke-Transform-FinOps1",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "pipelineParameters": {
+                                        "value": "@pipeline().parameters.pipelineParameters",
+                                        "type": "Expression"
+                                    },
+                                    "watermarkValue": {
+                                        "value": "@variables('watermarkValue')",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "LocalPipelineTriggerTime",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "_LocalPipelineTriggerTime",
+                    "value": {
+                        "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.LocalTimeZone\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "If processDelta",
+                "type": "IfCondition",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set watermarkValue for full load",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "watermarkValue",
+                                "value": "1900-01-01 00:00:00"
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set watermarkValue for delta load",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest Record in Stage",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "watermarkValue",
+                                "value": {
+                                    "value": "@if(\n    not(\n        or(empty(activity('Lookup Latest Record in Stage').output.firstRow.watermarkValue)\n        ,equals(activity('Lookup Latest Record in Stage').output.firstRow.watermarkValue,'null')\n        )\n    )\n    ,formatDateTime(activity('Lookup Latest Record in Stage').output.firstRow.watermarkValue,'yyyy-MM-dd hh:mm:ss')\n    ,'1900-01-01 00:00:00' \n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Lookup Latest Record in Stage",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([DataLakeModified_DateTime]) as watermarkValue\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.pipelineParameters.stagingDatalakeURL\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.stagingFileSystem)\n        ,'/'\n        ,toLower(\n            concat(\n                pipeline().parameters.pipelineParameters.stagingDirectory\n                ,'/'\n                ,pipeline().parameters.pipelineParameters.rawEntity\n                ,'/v'\n                ,pipeline().parameters.pipelineParameters.dataflowVersion\n            )\n        )\n        ,'/'', FORMAT=''DELTA''\n    ) AS [result]')\n    ",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set watermarkValue for initial load",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest Record in Stage",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "watermarkValue",
+                                "value": "1900-01-01 00:00:00"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set stagingDirectory for delta load",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "stagingDirectory",
+                    "value": {
+                        "value": "@toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Set rawDirectory",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "rawDirectory",
+                    "value": {
+                        "value": "@first(\n    split(\n        pipeline().parameters.pipelineParameters.rawDirectory\n        ,'/'\n        )\n)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "rawDatalakeURL": "https://cartersfinopstestexport.dfs.core.windows.net",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "dataflow": "FinOps_Generic_Raw_to_Staging",
+                    "dataflowVersion": "0",
+                    "processDelta": "True",
+                    "loadEntityId": "39",
+                    "keyVaultURL": "https://carters-dev-synapse-kv.vault.azure.net",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "sharePointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "tenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "sourceName": "Finops",
+                    "loadType": "INCREMENTAL",
+                    "rawFileSystem": "dynamics365-financeandoperations",
+                    "rawDirectory": "carters-test.sandbox.operations.dynamics.com/Tables/SupplyChain/Vendor/Main",
+                    "rawFileName": "Main.manifest.cdm.json",
+                    "rawEntity": "VendTable",
+                    "stagingDatalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "stagingFileSystem": "2-staging",
+                    "stagingDirectory": "CTR/TEST/Finops/Tables/SupplyChain/Vendor/Main",
+                    "database": "ctr_finance",
+                    "schema": "dbo",
+                    "keyColumns": "",
+                    "localiseDateTime": "False",
+                    "dataflowDependencies": "{'VendTablestagingFileSystem':'2-staging', 'VendTablestagingDirectory':'CTR/TEST/Finops/Tables/SupplyChain/Vendor/Main', 'VendTablestagingEntityName':'VendTable'}",
+                    "presentationDependencies": "{}"
+                }
+            }
+        },
+        "variables": {
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "stagingDirectory": {
+                "type": "String"
+            },
+            "rawDirectory": {
+                "type": "String"
+            },
+            "watermarkValue": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Transformations/FinOps"
+        },
+        "annotations": []
+    }
+}

@@ -1,0 +1,35 @@
+{
+    "name": "REST_Anonymous",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "REST_Anonymous",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "baseuri": {
+                    "value": "@dataset().url",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "url": {
+                "type": "string"
+            },
+            "relativeUrl": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "RestResource",
+        "typeProperties": {
+            "relativeUrl": {
+                "value": "@dataset().relativeUrl",
+                "type": "Expression"
+            }
+        },
+        "schema": []
+    }
+}

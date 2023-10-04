@@ -1,0 +1,50 @@
+{
+    "name": "DynamicsCRM",
+    "properties": {
+        "type": "DynamicsCrm",
+        "parameters": {
+            "serviceUri": {
+                "type": "string",
+                "defaultValue": "https://carters.crm6.dynamics.com"
+            },
+            "servicePrincipalID": {
+                "type": "string",
+                "defaultValue": "a9349a6f-901f-4033-843b-1cd359bbb509"
+            },
+            "secretName": {
+                "type": "string",
+                "defaultValue": "CartersCRMServicePrincipalKey"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net"
+            }
+        },
+        "annotations": [],
+        "typeProperties": {
+            "deploymentType": "Online",
+            "serviceUri": "@linkedService().serviceUri",
+            "authenticationType": "AADServicePrincipal",
+            "servicePrincipalCredentialType": "ServicePrincipalKey",
+            "servicePrincipalId": "@linkedService().servicePrincipalID",
+            "servicePrincipalCredential": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": "@linkedService().secretName"
+            }
+        },
+        "connectVia": {
+            "referenceName": "AutoResolveIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,373 @@
+{
+    "name": "import-Delimited",
+    "properties": {
+        "activities": [
+            {
+                "name": "Check Load Type",
+                "type": "IfCondition",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals('FULL', toUpper(pipeline().parameters.pipelineParameters.loadType))",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Lookup Latest File in Raw",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.pipelineParameters.datalakeURL\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.fileSystem)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.rawDirectory)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.table)\n        ,'/year=*/month=*/day=*/*.parquet'', FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set loadData initial load",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest File in Raw",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadData",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Lookup max loadTime in Raw",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest File in Raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([','_LoadTimestamp',']) as loadTime\nFROM\n    OPENROWSET(\n        BULK ''',activity('Lookup Latest File in Raw').output.firstRow.latestFile,''', FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set rawMaxLoad from raw",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup max loadTime in Raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "rawMaxLoadTime",
+                                "value": {
+                                    "value": "@activity('Lookup max loadTime in Raw').output.firstRow.loadTime",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set loadData for Full Load",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadData",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Switch Server Type",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "Check Load Type",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@toUpper(pipeline().parameters.pipelineParameters.sourceType)\n    ",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "SHAREPOINT",
+                            "activities": [
+                                {
+                                    "name": "Load SharePoint Files",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-SharePoint-Delimited",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            },
+                                            "loadData": {
+                                                "value": "@bool(variables('loadData'))",
+                                                "type": "Expression"
+                                            },
+                                            "rawMaxLoadTime": {
+                                                "value": "@variables('rawMaxLoadTime')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "FILESHARE",
+                            "activities": [
+                                {
+                                    "name": "Load EDWFileShare Files",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-FileShare-Delimited",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            },
+                                            "loadData": {
+                                                "value": "@bool(variables('loadData'))",
+                                                "type": "Expression"
+                                            },
+                                            "rawMaxLoadTime": {
+                                                "value": "@variables('rawMaxLoadTime')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "S3BUCKET",
+                            "activities": [
+                                {
+                                    "name": "Load S3 Bucket Files",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-S3-Delimited",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            },
+                                            "loadData": {
+                                                "value": "@bool(variables('loadData'))",
+                                                "type": "Expression"
+                                            },
+                                            "rawMaxLoadTime": {
+                                                "value": "@variables('rawMaxLoadTime')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail import Delimited",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat(\n    'Import delimited implementation not found for '\n    ,pipeline().parameters.pipelineParameters.sourceType\n)",
+                                    "type": "Expression"
+                                },
+                                "errorCode": "\"MISSING-IMPORT-IMPLEMENTATION\""
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "datalakeurl": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "sourceName": "EDWFileshare",
+                    "functionalArea": "HumanResources",
+                    "companyCode": "CTR",
+                    "fileSystem": "1-raw",
+                    "forceLoad": "False",
+                    "user": "svcCTRSynapseDEV@chhnet.net",
+                    "secret": "svcCTRSynapse",
+                    "watermarkField": "",
+                    "loadType": "FULL",
+                    "schema": "",
+                    "authType": "Windows",
+                    "Server": "melctrdbs02.chhnet.net",
+                    "rawDirectory": "CTR/PROD/EDWFileshare",
+                    "table": "DAILY_VEHICLE_UTILISATION",
+                    "database": "",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "IR": "OnPremises",
+                    "sourceType": "FileShare",
+                    "mappingFieldsFilter": "SourceEntityNameId eq 159",
+                    "keyvaultURL": "https://carters-dev-synapse-kv.vault.azure.net",
+                    "functionAppURL": "https://carters-nonprod-synapse-ps-fnapp.azurewebsites.net",
+                    "powerShellFunctionServicePrincipalSecret": "CartersSynapsePowerShellFunctionServicePrincipal",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sharepointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "tenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "resourcePath": "EDWProd/prod/chris21/carters",
+                    "entityFilter": "ETL_3167_16_1_DAILY_VEHICLE_UTILISATION_REPORT_FOR_CARTERS_BUILDING_SUPPLIES_GROUP_LIMITED_OVER_PERIOD_DAILY_ENDING_ON_yyyymmdd.csv",
+                    "delimiter": ",",
+                    "firstRowHeader": "True",
+                    "collectionReference": "",
+                    "entityType": "Delimited"
+                }
+            }
+        },
+        "variables": {
+            "fileURL": {
+                "type": "String"
+            },
+            "fileLastModified": {
+                "type": "String"
+            },
+            "fileList": {
+                "type": "Array"
+            },
+            "rawMaxLoadTime": {
+                "type": "String"
+            },
+            "loadData": {
+                "type": "Boolean"
+            },
+            "columnMappings": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "defaultAdditionalColumns": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Sources"
+        },
+        "annotations": []
+    }
+}

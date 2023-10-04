@@ -1,0 +1,906 @@
+{
+    "name": "invoke-Transform",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Pipeline Run Status",
+                "description": "Get Pipeline Run Status",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:20:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat('https://',pipeline().DataFactory,'.dev.azuresynapse.net/queryPipelineRuns?api-version=2020-12-01')",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "POST",
+                    "body": {
+                        "value": "{\n  \"lastUpdatedAfter\": \"@{addHours(pipeline().TriggerTime,-10)}\",\n  \"lastUpdatedBefore\": \"@{pipeline().TriggerTime}\",\n  \"filters\": [\n    {\n      \"operand\": \"PipelineName\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"@{concat(\n            'invoke-Transform-'\n            ,pipeline().parameters.pipelineParameters.sourceName\n           )\n          }\"\n      ]\n    },\n    {\n      \"operand\": \"Status\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"InProgress\"\n      ]\n    }\n  ]\n}",
+                        "type": "Expression"
+                    },
+                    "authentication": {
+                        "type": "MSI",
+                        "resource": "https://dev.azuresynapse.net"
+                    }
+                }
+            },
+            {
+                "name": "Filter Pipeline",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get Pipeline Run Status",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Pipeline Run Status').output.value",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@equals(\n    item().parameters.pipelineParameters\n    , pipeline().parameters.pipelineParameters\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Check Pipeline alrady running",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Filter Pipeline",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(activity('Filter Pipeline').output.FilteredItemsCount, 0)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set SourceSystem To Wait",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceSystem",
+                                "value": {
+                                    "value": "WAIT-RUN",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set InProgress Pipeline RunID",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "runningPipelineID",
+                                "value": {
+                                    "value": "@activity('Filter Pipeline').output.value[0].runId",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set SourceSystem to Transform",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceSystem",
+                                "value": {
+                                    "value": "@pipeline().parameters.pipelineParameters.sourceName",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If StageDataFormat Is Delta",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check Pipeline alrady running",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(toUpper(pipeline().parameters.pipelineParameters.stageDataFormat),'DELTA')",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "sourceInvokeTransformParam1",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceInvokeTransformParam",
+                                "value": {
+                                    "value": "@string(pipeline().parameters.pipelineParameters)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set executeBroker1",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "sourceInvokeTransformParam1",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "executeSourceBroker",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "VersionFolderExistsORNot",
+                            "type": "GetMetadata",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "Parquet_DataLake_DataFlow",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "dataLakeURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@pipeline().parameters.pipelineParameters.stagingFileSystem",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "fieldList": [
+                                    "exists"
+                                ],
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "ParquetReadSettings"
+                                }
+                            }
+                        },
+                        {
+                            "name": "sourceInvokeTransformParam",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "VersionFolderExistsORNot",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceInvokeTransformParam",
+                                "value": {
+                                    "value": "@if(activity('VersionFolderExistsORNot').output.exists\n    ,string(pipeline().parameters.pipelineParameters)\n    ,replace(\n        string(pipeline().parameters.pipelineParameters)\n        ,'\"processDelta\": true'\n        ,'\"processDelta\": false'\n    )\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set executeBroker",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "sourceInvokeTransformParam",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "executeSourceBroker",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "dataflowVersion",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set executeBroker",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "dataflowVersion",
+                                "value": {
+                                    "value": "@pipeline().parameters.pipelineParameters.dataflowVersion",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Until Broker Executed",
+                "type": "Until",
+                "dependsOn": [
+                    {
+                        "activity": "If StageDataFormat Is Delta",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(variables('executeSourceBroker'),bool(0))",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Switch Source System",
+                            "type": "Switch",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "on": {
+                                    "value": "@toUpper(pipeline().parameters.pipelineParameters.sourceName)",
+                                    "type": "Expression"
+                                },
+                                "cases": [
+                                    {
+                                        "value": "FINOPS",
+                                        "activities": [
+                                            {
+                                                "name": "FinOps Broker",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "invoke-Transform-FinOps",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "pipelineParameters": {
+                                                            "value": "@json(variables('sourceInvokeTransformParam'))",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Set FinOps Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "FinOps Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('FinOps Broker'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail FinOps Broker",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "FinOps Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('FinOps Broker').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('FinOps Broker').Error.errorCode",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "EDWFILESHARE",
+                                        "activities": [
+                                            {
+                                                "name": "EDW FileShare Broker",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "invoke-Transform-EDWFileshare",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "pipelineParameters": {
+                                                            "value": "@json(variables('sourceInvokeTransformParam'))",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Set EDW FileShare Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "EDW FileShare Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('EDW FileShare Broker'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail EDW FileShare Broker Broker",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "EDW FileShare Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('EDW FileShare Broker').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('EDW FileShare Broker').Error.errorCode",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "EROAD",
+                                        "activities": [
+                                            {
+                                                "name": "Eroad Broker",
+                                                "type": "ExecutePipeline",
+                                                "dependsOn": [],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "pipeline": {
+                                                        "referenceName": "invoke-Transform-Eroad",
+                                                        "type": "PipelineReference"
+                                                    },
+                                                    "waitOnCompletion": true,
+                                                    "parameters": {
+                                                        "pipelineParameters": {
+                                                            "value": "@json(variables('sourceInvokeTransformParam'))",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Set Eroad Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "Eroad Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('Eroad Broker'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail Eroad Broker",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "Eroad Broker",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('Eroad Broker').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('Eroad Broker').Error.errorCode",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "defaultActivities": [
+                                    {
+                                        "name": "invoke-Transform2",
+                                        "type": "ExecutePipeline",
+                                        "dependsOn": [],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "pipeline": {
+                                                "referenceName": "invoke-Transform2",
+                                                "type": "PipelineReference"
+                                            },
+                                            "waitOnCompletion": true,
+                                            "parameters": {
+                                                "sourceInvokeTransformParam": {
+                                                    "value": "@variables('sourceInvokeTransformParam')",
+                                                    "type": "Expression"
+                                                },
+                                                "sourceName": {
+                                                    "value": "@toUpper(pipeline().parameters.pipelineParameters.sourceName)",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Set Transform2 Error Details",
+                                        "type": "SetVariable",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "invoke-Transform2",
+                                                "dependencyConditions": [
+                                                    "Failed"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "errorMessage",
+                                            "value": {
+                                                "value": "@string(activity('invoke-Transform2'))",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Fail Transform2 Broker",
+                                        "type": "Fail",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "invoke-Transform2",
+                                                "dependencyConditions": [
+                                                    "Failed"
+                                                ]
+                                            }
+                                        ],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "message": {
+                                                "value": "@activity('invoke-Transform2').Error.message",
+                                                "type": "Expression"
+                                            },
+                                            "errorCode": {
+                                                "value": "@activity('invoke-Transform2').Error.errorCode",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "check DeltaMerge Failure",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "Switch Source System",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@and(\n    not(empty(variables('errorMessage')))\n    ,contains(\n        json(variables('errorMessage')).Error.message\n        ,'org.apache.spark.sql.AnalysisException: cannot resolve `target.'\n    )\n)",
+                                    "type": "Expression"
+                                },
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "Fail invoke-Transform",
+                                        "type": "Fail",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Set executeBroker for failure",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "message": {
+                                                "value": "@json(variables('errorMessage')).Error.message",
+                                                "type": "Expression"
+                                            },
+                                            "errorCode": {
+                                                "value": "@json(variables('errorMessage')).Error.errorCode",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Set executeBroker for failure",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "executeSourceBroker",
+                                            "value": {
+                                                "value": "@bool(0)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Set sourceInvokeTransformParam for rerun",
+                                        "type": "SetVariable",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Set dataflowVersion",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "sourceInvokeTransformParam",
+                                            "value": {
+                                                "value": "@replace(\n    replace(\n        string(pipeline().parameters.pipelineParameters)\n        ,concat('\"dataflowVersion\":\"',pipeline().parameters.pipelineParameters.dataflowVersion,'\"')\n        ,concat(\n            '\"dataflowVersion\":\"'\n            ,variables('dataflowVersion')\n            ,'\"'\n        )\n    ),'\"processDelta\": true','\"processDelta\": false'\n)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Set dataflowVersion",
+                                        "type": "SetVariable",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "incrementingdataflowVersion",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "dataflowVersion",
+                                            "value": {
+                                                "value": "@variables('incrementingdataflowVersion')\n",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Set executeBroker for rerun",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "executeSourceBroker",
+                                            "value": {
+                                                "value": "@bool(1)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "incrementingdataflowVersion",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "incrementingdataflowVersion",
+                                            "value": {
+                                                "value": "@string(add(int(variables('dataflowVersion')),1))",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "Set executeBroker for success",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Switch Source System",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "executeSourceBroker",
+                                "value": {
+                                    "value": "@bool(0)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "dataflowVersionIncrement",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "Switch Source System",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@if(greater(variables('dataflowVersion'),pipeline().parameters.pipelineParameters.dataflowVersion),true,false\r\n)",
+                                    "type": "Expression"
+                                },
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Execute Update Dataflow Version",
+                                        "type": "ExecutePipeline",
+                                        "dependsOn": [],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "pipeline": {
+                                                "referenceName": "update-dataflow-version",
+                                                "type": "PipelineReference"
+                                            },
+                                            "waitOnCompletion": true,
+                                            "parameters": {
+                                                "pipelineParameters": {
+                                                    "value": "@json(variables('sourceInvokeTransformParam'))",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "timeout": "0.12:00:00"
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "rawDatalakeURL": "https://cartersfinopstestexport.dfs.core.windows.net",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "dataflow": "Test_Delta_Schema_Drift",
+                    "dataflowVersion": "0",
+                    "sharePointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sourceName": "TEST",
+                    "loadType": "INCREMENTAL",
+                    "rawFileSystem": "dynamics365-financeandoperations",
+                    "rawDirectory": "carters-test.sandbox.operations.dynamics.com/Tables/SupplyChain/Vendor/Main",
+                    "rawFileName": "Main.manifest.cdm.json",
+                    "rawEntity": "VendTable",
+                    "stagingDatalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "stagingFileSystem": "2-staging",
+                    "stagingDirectory": "CTR/TEST/Finops/Tables/SupplyChain/Vendor/Main",
+                    "database": "ctr_finance",
+                    "schema": "dbo",
+                    "keyColumns": "",
+                    "localiseDateTime": "False",
+                    "dataflowDependencies": "{'VendTablestagingFileSystem':'2-staging', 'VendTablestagingDirectory':'CTR/TEST/Finops/Tables/SupplyChain/Vendor/Main', 'VendTablestagingEntityName':'VendTable'}",
+                    "presentationDependencies": "{}",
+                    "stageDataFormat": "Delta"
+                }
+            }
+        },
+        "variables": {
+            "sourceSystem": {
+                "type": "String"
+            },
+            "runningPipelineID": {
+                "type": "String"
+            },
+            "dataflowParam": {
+                "type": "String"
+            },
+            "errorMessage": {
+                "type": "String"
+            },
+            "dataflowVersion": {
+                "type": "String"
+            },
+            "executeSourceBroker": {
+                "type": "Boolean"
+            },
+            "sourceInvokeTransformParam": {
+                "type": "String"
+            },
+            "incrementingdataflowVersion": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}

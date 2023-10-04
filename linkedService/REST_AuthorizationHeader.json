@@ -1,0 +1,83 @@
+{
+    "name": "REST_AuthorizationHeader",
+    "properties": {
+        "parameters": {
+            "url": {
+                "type": "string",
+                "defaultValue": "https://api.apac.eroad.com/v1/"
+            },
+            "secret": {
+                "type": "string",
+                "defaultValue": "CartersEroadApiKey"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "RestService",
+        "typeProperties": {
+            "url": "@{linkedService().url}",
+            "enableServerCertificateValidation": true,
+            "authenticationType": "Anonymous",
+            "authHeaders": {
+                "Authorization": {
+                    "type": "AzureKeyVaultSecret",
+                    "store": {
+                        "referenceName": "synapse_keyvault",
+                        "type": "LinkedServiceReference",
+                        "parameters": {
+                            "keyvaultURL": {
+                                "value": "@linkedService().keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "secretName": {
+                        "value": "@linkedService().secret",
+                        "type": "Expression"
+                    }
+                },
+                "APIKey": {
+                    "type": "AzureKeyVaultSecret",
+                    "store": {
+                        "referenceName": "synapse_keyvault",
+                        "type": "LinkedServiceReference",
+                        "parameters": {
+                            "keyvaultURL": {
+                                "value": "@linkedService().keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "secretName": {
+                        "value": "@linkedService().secret",
+                        "type": "Expression"
+                    }
+                },
+                "X-API-Key": {
+                    "type": "AzureKeyVaultSecret",
+                    "store": {
+                        "referenceName": "synapse_keyvault",
+                        "type": "LinkedServiceReference",
+                        "parameters": {
+                            "keyvaultURL": {
+                                "value": "@linkedService().keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "secretName": {
+                        "value": "@linkedService().secret",
+                        "type": "Expression"
+                    }
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "AutoResolveIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "name": "AmazonS3",
+    "properties": {
+        "parameters": {
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net"
+            },
+            "accessKeyIDSecret": {
+                "type": "string",
+                "defaultValue": "EroadS3AccessKeyID"
+            },
+            "accessKeySecret": {
+                "type": "string",
+                "defaultValue": "EroadS3AccessKeySecret"
+            }
+        },
+        "annotations": [],
+        "type": "AmazonS3",
+        "typeProperties": {
+            "serviceUrl": "https://s3.amazonaws.com",
+            "accessKeyId": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().accessKeyIDSecret",
+                    "type": "Expression"
+                }
+            },
+            "secretAccessKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().accessKeySecret",
+                    "type": "Expression"
+                }
+            },
+            "authenticationType": "AccessKey"
+        },
+        "connectVia": {
+            "referenceName": "On-PremisesIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

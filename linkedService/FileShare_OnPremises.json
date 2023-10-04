@@ -1,0 +1,47 @@
+{
+    "name": "FileShare_OnPremises",
+    "properties": {
+        "parameters": {
+            "host": {
+                "type": "string"
+            },
+            "user": {
+                "type": "string"
+            },
+            "secret": {
+                "type": "string"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "FileServer",
+        "typeProperties": {
+            "host": "@{linkedService().host}",
+            "userId": "@{linkedService().user}",
+            "password": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().secret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "On-PremisesIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,81 @@
+{
+    "name": "S3_Delimited",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "AmazonS3",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "keyvaultURL": {
+                    "value": "@dataset().keyvaultURL",
+                    "type": "Expression"
+                },
+                "accessKeyIDSecret": {
+                    "value": "@dataset().accessKeyIDSecret",
+                    "type": "Expression"
+                },
+                "accessKeySecret": {
+                    "value": "@dataset().accessKeySecret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-kv.vault.azure.net/"
+            },
+            "accessKeyIDSecret": {
+                "type": "string",
+                "defaultValue": "EroadS3AccessKeyID"
+            },
+            "accessKeySecret": {
+                "type": "string",
+                "defaultValue": "EroadS3AccessKeySecret"
+            },
+            "s3Bucket": {
+                "type": "string",
+                "defaultValue": "temp-data-sharing-cartersbuilding-s3bucket-3xwmj3wbhqmq"
+            },
+            "delimiter": {
+                "type": "string",
+                "defaultValue": ","
+            },
+            "firstRowHeader": {
+                "type": "bool",
+                "defaultValue": true
+            },
+            "fileName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "AmazonS3Location",
+                "bucketName": {
+                    "value": "@dataset().s3Bucket",
+                    "type": "Expression"
+                },
+                "fileName": {
+                    "value": "@dataset().fileName",
+                    "type": "Expression"
+                }
+            },
+            "columnDelimiter": {
+                "value": "@dataset().delimiter",
+                "type": "Expression"
+            },
+            "escapeChar": "\\",
+            "firstRowAsHeader": {
+                "value": "@dataset().firstRowHeader",
+                "type": "Expression"
+            },
+            "quoteChar": "\""
+        },
+        "schema": []
+    }
+}

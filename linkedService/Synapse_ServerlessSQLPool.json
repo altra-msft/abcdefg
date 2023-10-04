@@ -1,0 +1,24 @@
+{
+    "name": "Synapse_ServerlessSQLPool",
+    "properties": {
+        "parameters": {
+            "database": {
+                "type": "string",
+                "defaultValue": "default"
+            },
+            "server": {
+                "type": "string",
+                "defaultValue": "carters-dev-synapse-workspace"
+            }
+        },
+        "annotations": [],
+        "type": "AzureSqlDW",
+        "typeProperties": {
+            "connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=\"@{concat(\n    linkedService().server\n    ,'-ondemand.sql.azuresynapse.net'\n)}\";Initial Catalog=@{linkedService().database}"
+        },
+        "connectVia": {
+            "referenceName": "AutoScaleIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

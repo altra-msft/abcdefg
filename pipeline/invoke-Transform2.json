@@ -1,0 +1,291 @@
+{
+    "name": "invoke-Transform2",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch2",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.sourceName",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "ESTIMATE",
+                            "activities": [
+                                {
+                                    "name": "Estimate Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-Estimate",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "K2",
+                            "activities": [
+                                {
+                                    "name": "K2 Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-K2",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "CRM",
+                            "activities": [
+                                {
+                                    "name": "CRM Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-CRM",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "JTS",
+                            "activities": [
+                                {
+                                    "name": "JTS Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-JTS",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "CHRIS21",
+                            "activities": [
+                                {
+                                    "name": "CHRIS21 Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-Chris21",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "S3",
+                            "activities": [
+                                {
+                                    "name": "S3 Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-S3",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "SPFINANCEMASTER",
+                            "activities": [
+                                {
+                                    "name": "SPFinanceMaster Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-SPFinanceMaster",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "MDS",
+                            "activities": [
+                                {
+                                    "name": "MDS Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-MDS",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "SPSHAREDDOCUMENT",
+                            "activities": [
+                                {
+                                    "name": "SPSharedDocumentBroker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-SPSharedDocument",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "VWORK",
+                            "activities": [
+                                {
+                                    "name": "Vwork Broker",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "invoke-Transform-Vwork",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@json(pipeline().parameters.sourceInvokeTransformParam)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail Invoke Transform2",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat('No broker implemented')",
+                                    "type": "Expression"
+                                },
+                                "errorCode": {
+                                    "value": "@concat('NO TRANSFORM BROKER')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "sourceInvokeTransformParam": {
+                "type": "string"
+            },
+            "sourceName": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}

@@ -1,0 +1,646 @@
+{
+    "name": "import-DW",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch on tableName",
+                "type": "Switch",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@toLower(pipeline().parameters.pipelineParameters.table)",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "fact_eroad_daily_vehicle_utilisation",
+                            "activities": [
+                                {
+                                    "name": "loadQueryFactDailyUtilisation",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "loadQuery",
+                                        "value": {
+                                            "value": "@concat('SELECT * From '\n  ,pipeline().parameters.pipelineParameters.database\n  ,'.'\n  ,pipeline().parameters.pipelineParameters.schema\n  ,'.'\n  ,pipeline().parameters.pipelineParameters.pipelineParameters.table\n  ,' where '\n  ,pipeline().parameters.pipelineParameters.watermarkField\n  ,' between '\n  ,''''\n  ,split(pipeline().parameters.pipelineParameters.entityFilter,',')[0]\n  ,''''\n  ,' and '\n  ,''''\n  ,split(pipeline().parameters.pipelineParameters.entityFilter,',')[1]\n  ,''''\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "vt_dim_eroad_driver",
+                            "activities": [
+                                {
+                                    "name": "loadQueryDriver",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "currentDriverIDs",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "loadQuery",
+                                        "value": {
+                                            "value": "@concat('SELECT * From '\n  ,pipeline().parameters.pipelineParameters.database\n  ,'.'\n  ,pipeline().parameters.pipelineParameters.schema\n  ,'.'\n  ,pipeline().parameters.pipelineParameters.table\n  ,' where '\n  ,pipeline().parameters.pipelineParameters.watermarkField\n  ,' not in '\n  ,variables('driverID')\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "lookupDriverIdFromAPICall",
+                                    "type": "Lookup",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "loadDataWhenFileAbsent",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "SqlDWSource",
+                                            "sqlReaderQuery": {
+                                                "value": "@concat('SELECT ',pipeline().parameters.pipelineParameters.watermarkField,' FROM (',\n    'SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.pipelineParameters.datalakeURL\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.fileSystem)\n        ,'/'\n        ,replace(toLower(pipeline().parameters.pipelineParameters.rawDirectory),'_hist','')\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.table)\n        ,'/year=*/month=*/day=*/*.parquet'', FORMAT=''PARQUET''\n    ) AS [result]'\n    ,') t'\n    )\n    ",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "dataset": {
+                                            "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "database": "default",
+                                                "synapseWorkspaceName": {
+                                                    "value": "@pipeline().DataFactory",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        },
+                                        "firstRowOnly": false
+                                    }
+                                },
+                                {
+                                    "name": "currentDriverIDs",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "lookupDriverIdFromAPICall",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "driverID",
+                                        "value": {
+                                            "value": "@replace(replace(replace(replace(replace(replace(replace(string(activity('lookupDriverIdFromAPICall').output.value),'\"id\"',''),'\"',''''),'{',''),'}',''),':',''),'[','('),']',')')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "lookupIfHistFilePresent",
+                                    "type": "Lookup",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "source": {
+                                            "type": "SqlDWSource",
+                                            "sqlReaderQuery": {
+                                                "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.pipelineParameters.datalakeURL\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.fileSystem)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.rawDirectory)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.table)\n        ,'/year=*/month=*/day=*/*.parquet'', FORMAT=''PARQUET''\n    ) AS [result]')\n    ",
+                                                "type": "Expression"
+                                            },
+                                            "queryTimeout": "02:00:00",
+                                            "partitionOption": "None"
+                                        },
+                                        "dataset": {
+                                            "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                            "type": "DatasetReference",
+                                            "parameters": {
+                                                "database": "default",
+                                                "synapseWorkspaceName": {
+                                                    "value": "@pipeline().DataFactory",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "loadDataWhenFileAbsent",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "lookupIfHistFilePresent",
+                                            "dependencyConditions": [
+                                                "Failed"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "loadData",
+                                        "value": {
+                                            "value": "@bool(1)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                {
+                                    "name": "loadDataWhenFilePresent",
+                                    "type": "SetVariable",
+                                    "dependsOn": [
+                                        {
+                                            "activity": "lookupIfHistFilePresent",
+                                            "dependencyConditions": [
+                                                "Succeeded"
+                                            ]
+                                        }
+                                    ],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "loadData",
+                                        "value": {
+                                            "value": "@bool(0)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If loadData",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Switch on tableName",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@contains(variables('loadData'),true)",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Copy historical data",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "new-mapping",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "Set _LocalPipelineTriggerTime",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlMISource",
+                                    "additionalColumns": [
+                                        {
+                                            "name": "_LoadTimestamp",
+                                            "value": {
+                                                "value": "@formatDateTime(utcNow(),'u')",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadWorkspace",
+                                            "value": {
+                                                "value": "@pipeline().DataFactory",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipeline",
+                                            "value": {
+                                                "value": "@pipeline().Pipeline",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineRunId",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerId",
+                                            "value": {
+                                                "value": "@pipeline().TriggerId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTrigger",
+                                            "value": {
+                                                "value": "@pipeline().TriggerName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerType",
+                                            "value": {
+                                                "value": "@pipeline().TriggerType",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerTime",
+                                            "value": {
+                                                "value": "@pipeline().TriggerTime",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByPipeline",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByRunId",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineRunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadSource",
+                                            "value": {
+                                                "value": "@pipeline().parameters.pipelineParameters.rawDirectory",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    ],
+                                    "sqlReaderQuery": {
+                                        "value": "@variables('loadQuery')",
+                                        "type": "Expression"
+                                    },
+                                    "partitionOption": "None"
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "value": "@activity('new-mapping').output",
+                                    "type": "Expression"
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DW",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "@pipeline().parameters.pipelineParameters.database",
+                                            "type": "Expression"
+                                        },
+                                        "server": {
+                                            "value": "@pipeline().parameters.pipelineParameters.Server",
+                                            "type": "Expression"
+                                        },
+                                        "schema": {
+                                            "value": "@pipeline().parameters.pipelineParameters.schema",
+                                            "type": "Expression"
+                                        },
+                                        "table": {
+                                            "value": "@pipeline().parameters.pipelineParameters.table",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "Parquet_DataLake",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "datalakeURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@pipeline().parameters.pipelineParameters.fileSystem",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@concat(\n    pipeline().parameters.pipelineParameters.rawDirectory\n    ,'/'\n    ,pipeline().parameters.pipelineParameters.table\n    ,'/year=',formatDateTime(variables('_LocalPipelineTriggerTime'),'yyyy')\n    ,'/month=',formatDateTime(variables('_LocalPipelineTriggerTime'),'MM')\n    ,'/day=',formatDateTime(variables('_LocalPipelineTriggerTime'),'dd')\n)",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@concat(\n    pipeline().parameters.pipelineParameters.table\n    ,'_'\n    ,formatDateTime(\n        variables('_LocalPipelineTriggerTime')\n        ,'yyyy-MM-dd_HH-mm-ss'\n    )\n    ,'.parquet'\n)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "name": "get-FieldMappingsSharePoint",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SharePointOnlineListSource",
+                                    "query": {
+                                        "value": "$filter = @{pipeline().parameters.pipelineParameters.mappingFieldsFilter}",
+                                        "type": "Expression"
+                                    },
+                                    "httpRequestTimeout": "00:05:00"
+                                },
+                                "dataset": {
+                                    "referenceName": "SharePointList",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "list": "FieldMapping",
+                                        "sharepointURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointURL",
+                                            "type": "Expression"
+                                        },
+                                        "tenantID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.tenantID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalSecret": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalSecret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "new-mapping",
+                            "type": "AzureFunctionActivity",
+                            "dependsOn": [
+                                {
+                                    "activity": "get-FieldMappingsSharePoint",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "get-DefaultAdditionalColumnsSharePoint",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "functionName": "new-mapping",
+                                "method": "POST",
+                                "body": {
+                                    "value": "{\n\"entityColumns\": @{activity('get-FieldMappingsSharePoint').output.value},\n\"additionalColumns\": @{activity('get-DefaultAdditionalColumnsSharePoint').output.value},\n\"collectionReference\": \"@{pipeline().parameters.pipelineParameters.collectionReference}\"\n}",
+                                    "type": "Expression"
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "PowerShellFunction",
+                                "type": "LinkedServiceReference",
+                                "parameters": {
+                                    "functionAppURL": {
+                                        "value": "@pipeline().parameters.pipelineParameters.functionAppURL",
+                                        "type": "Expression"
+                                    },
+                                    "secretName": {
+                                        "value": "@pipeline().parameters.pipelineParameters.powerShellFunctionServicePrincipalSecret",
+                                        "type": "Expression"
+                                    },
+                                    "keyvaultURL": {
+                                        "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "get-DefaultAdditionalColumnsSharePoint",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SharePointOnlineListSource",
+                                    "httpRequestTimeout": "00:05:00"
+                                },
+                                "dataset": {
+                                    "referenceName": "SharePointList",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "list": "DefaultAdditionalColumn",
+                                        "sharepointURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointURL",
+                                            "type": "Expression"
+                                        },
+                                        "tenantID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.tenantID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalSecret": {
+                                            "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalSecret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        },
+                        {
+                            "name": "Set _LocalPipelineTriggerTime",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "_LocalPipelineTriggerTime",
+                                "value": {
+                                    "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.localTimeZone\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "datalakeurl": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "sourceName": "Eroad",
+                    "functionalArea": "manufacturing",
+                    "companyCode": "CTR",
+                    "fileSystem": "1-raw",
+                    "forceLoad": "False",
+                    "user": "",
+                    "secret": "CartersEroadApiKey",
+                    "watermarkField": "[Driver ID]",
+                    "loadType": "FULL",
+                    "schema": "dbo",
+                    "authType": "HeaderAuth",
+                    "Server": "carters-cdp-managed-sql.ause133b30c93279d.database.windows.net",
+                    "rawDirectory": "CTR/PROD/Eroad",
+                    "table": "vt_dim_eroad_driver",
+                    "database": "Carters_DW_Prod",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "IR": "Azure",
+                    "sourceType": "API",
+                    "mappingFieldsFilter": "SourceEntityNameId eq 281",
+                    "keyvaultURL": "https://carters-dev-synapse-kv.vault.azure.net",
+                    "functionAppURL": "https://carters-nonprod-analytics.azurewebsites.net",
+                    "powerShellFunctionServicePrincipalSecret": "CartersSynapsePowerShellFunctionServicePrincipal",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sharepointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "sharepointTenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "tenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "resourcePath": "v1/drivers",
+                    "entityFilter": "",
+                    "delimiter": "",
+                    "firstRowHeader": "False",
+                    "collectionReference": "drivers",
+                    "entityType": "Eroad"
+                }
+            }
+        },
+        "variables": {
+            "loadQuery": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "driverID": {
+                "type": "String"
+            },
+            "loadData": {
+                "type": "Boolean"
+            }
+        },
+        "folder": {
+            "name": "_framework/Sources"
+        },
+        "annotations": []
+    }
+}

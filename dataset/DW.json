@@ -1,0 +1,46 @@
+{
+    "name": "DW",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "SQL_Azure_Managed _SP",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "server": {
+                    "value": "@dataset().server",
+                    "type": "Expression"
+                },
+                "database": {
+                    "value": "@dataset().database",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "database": {
+                "type": "string"
+            },
+            "server": {
+                "type": "string"
+            },
+            "schema": {
+                "type": "string"
+            },
+            "table": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "AzureSqlMITable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schema",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().table",
+                "type": "Expression"
+            }
+        }
+    }
+}

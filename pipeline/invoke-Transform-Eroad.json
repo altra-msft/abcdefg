@@ -1,0 +1,357 @@
+{
+    "name": "invoke-Transform-Eroad",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch Dataflow",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "LocalPipelineTriggerTime",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.pipelineParameters.dataflow",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "Eroad_Vehicles_Raw_to_Staging",
+                            "activities": [
+                                {
+                                    "name": "EroadVehicle",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "Eroad_Vehicles_Raw_to_Staging",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "vehiclestagingDirectory": {
+                                                    "value": "'@{toLower(concat(\n    json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehiclestagingDirectory\n    ,'/'\n    ,json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehiclestagingEntityName\n    ,'/v'\n    ,pipeline().parameters.pipelineParameters.dataflowVersion\n)\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vehiclestagingFileSystem": {
+                                                    "value": "'@{toLower(json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehiclestagingFileSystem)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vehicleFleetstagingDirectory": {
+                                                    "value": "'@{toLower(concat(\n    json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehicleFleetstagingDirectory\n    ,'/'\n    ,json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehicleFleetstagingEntityName\n    ,'/v'\n    ,pipeline().parameters.pipelineParameters.dataflowVersion\n)\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vehicleFleetstagingFileSystem": {
+                                                    "value": "'@{toLower(json(pipeline().parameters.pipelineParameters.dataflowDependencies).VehicleFleetstagingFileSystem)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "partitionPath": {
+                                                    "value": "'@{join(take(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),sub(length(split(pipeline().parameters.pipelineParameters.rawDirectory,'/')),3)),'/')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{toLower(pipeline().parameters.pipelineParameters.rawDirectory)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "processDelta": {
+                                                    "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "sourceVehicles": {
+                                                    "dataLakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileSystem)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "vehicleSink": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkVehicleFleet": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkVehicleUpdatedRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkVehicleNewRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Eroad_Drivers_Raw_to_Staging",
+                            "activities": [
+                                {
+                                    "name": "EroadDrivers",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "Eroad_Drivers_Raw_to_Staging",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "stagingDirectory": {
+                                                    "value": "'@{toLower(concat(\n    json(pipeline().parameters.pipelineParameters.dataflowDependencies).DriverstagingDirectory\n    ,'/'\n    ,json(pipeline().parameters.pipelineParameters.dataflowDependencies).DriverstagingEntityName\n    ,'/v'\n    ,pipeline().parameters.pipelineParameters.dataflowVersion\n)\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "partitionPath": {
+                                                    "value": "'@{join(take(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),sub(length(split(pipeline().parameters.pipelineParameters.rawDirectory,'/')),3)),'/')}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{toLower(pipeline().parameters.pipelineParameters.rawDirectory)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "processDelta": {
+                                                    "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "drivers": {
+                                                    "dataLakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileSystem)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "driverSink": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkDriverUpdatedRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkDriverNewRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "Eroad_Fleet_Raw_to_Staging",
+                            "activities": [
+                                {
+                                    "name": "EroadFleet",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "Eroad_Fleet_Raw_to_Staging",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{toLower(\n    concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        )\n)\n}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "Fleet": {
+                                                    "datalakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileSystem)",
+                                                        "type": "Expression"
+                                                    },
+                                                    "directory": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawDirectory)",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileName": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileName)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "fleetSink": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkUpdatedRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                },
+                                                "sinkInsertedRecords": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDataLakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail invoke-Transform-Eroad",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat(\n    'No dataflow implementation found for '\n    ,pipeline().parameters.pipelineParameters.rawEntity\n    ,'. Dataflow Configured in Load Entiy is '\n    ,pipeline().parameters.pipelineParameters.dataflow\n)",
+                                    "type": "Expression"
+                                },
+                                "errorCode": {
+                                    "value": "'MISSING-DATAFLOW'",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "LocalPipelineTriggerTime",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "_LocalPipelineTriggerTime",
+                    "value": {
+                        "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.LocalTimeZone\n)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": "{     \"dataflow\": {         \"referenceName\": \"Eroad_Vehicles_Raw_to_Staging\",         \"type\": \"DataFlowReference\",         \"parameters\": {             \"stagingDirectory\": \"'ctr/prod/eroad/vehicle'\",             \"stagingFileSystem\": \"'2-staging'\"         },         \"datasetParameters\": {             \"sourceVehicles\": {                 \"dataLakeURL\": \"https://cartersdevdatalake.dfs.core.windows.net\",                 \"fileSystem\": \"1-raw\",                 \"directory\": \"ctr/prod/eroad/vehicle/year=2023/month=01/day=05\"             },             \"sinkVehicleFleet\": {                 \"dataLakeURL\": \"https://cartersdevdatalake.dfs.core.windows.net\",                 \"fileSystem\": \"2-staging\",                 \"directory\": \"ctr/prod/eroad/vehiclefleet/year=2023/month=01/day=05\"             },             \"sinkVehicle\": {}         },         \"linkedServiceParameters\": {             \"sinkVehicle\": {                 \"linkedService\": {                     \"datalakeURL\": \"https://cartersdevdatalake.dfs.core.windows.net\"                 }             }         }     }"
+            }
+        },
+        "variables": {
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Transformations/Eroad"
+        },
+        "annotations": []
+    }
+}

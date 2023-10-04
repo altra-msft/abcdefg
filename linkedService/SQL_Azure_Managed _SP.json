@@ -1,0 +1,24 @@
+{
+    "name": "SQL_Azure_Managed _SP",
+    "properties": {
+        "parameters": {
+            "server": {
+                "type": "string",
+                "defaultValue": "carters-cdp-managed-sql.ause133b30c93279d.database.windows.net"
+            },
+            "database": {
+                "type": "string",
+                "defaultValue": "Carters_DW_Prod"
+            }
+        },
+        "annotations": [],
+        "type": "AzureSqlMI",
+        "typeProperties": {
+            "connectionString": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=@{linkedService().server};Initial Catalog=@{linkedService().database}"
+        },
+        "connectVia": {
+            "referenceName": "AutoResolveIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

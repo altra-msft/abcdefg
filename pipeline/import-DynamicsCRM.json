@@ -1,0 +1,387 @@
+{
+    "name": "import-DynamicsCRM",
+    "properties": {
+        "activities": [
+            {
+                "name": "Load Data",
+                "description": "Check if source system have data to load",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Lookup Source For Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(\n    not(empty(activity('Lookup Source For Data').output.firstRow)),\n    bool(\n        coalesce(\n            pipeline().parameters.pipelineParameters.forceLoad\n            ,false\n        )   \n    )\n)",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set rawDirectory",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set _LocalPipelineTriggerTime",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "rawDirectory",
+                                "value": {
+                                    "value": "@concat(\n    pipeline().parameters.pipelineParameters.rawDirectory\n    ,'/'\n    ,pipeline().parameters.pipelineParameters.table\n    ,'/year=',formatDateTime(variables('_LocalPipelineTriggerTime'),'yyyy')\n    ,'/month=',formatDateTime(variables('_LocalPipelineTriggerTime'),'MM')\n    ,'/day=',formatDateTime(variables('_LocalPipelineTriggerTime'),'dd')\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set fileName",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set _LocalPipelineTriggerTime",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "rawFileName",
+                                "value": {
+                                    "value": "@concat(\n    pipeline().parameters.pipelineParameters.table\n    ,'_'\n    ,formatDateTime(\n        variables('_LocalPipelineTriggerTime')\n        ,'yyyy-MM-dd_HH-mm-ss'\n    )\n    ,'.parquet'\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set _LocalPipelineTriggerTime",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "_LocalPipelineTriggerTime",
+                                "value": {
+                                    "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.localTimeZone\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Copy Dynamic CRM data",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set rawDirectory",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "Set fileName",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:40:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [
+                                {
+                                    "name": "Source",
+                                    "value": "@{pipeline().parameters.pipelineParameters.schema}.@{pipeline().parameters.pipelineParameters.table}"
+                                },
+                                {
+                                    "name": "Destination",
+                                    "value": "@{'1-raw'}/@{variables('rawDirectory')}/@{variables('rawFileName')}"
+                                }
+                            ],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "DynamicsCrmSource",
+                                    "additionalColumns": [
+                                        {
+                                            "name": "_LoadTimestamp",
+                                            "value": {
+                                                "value": "@formatDateTime(utcNow(),'u')",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadWorkspace",
+                                            "value": {
+                                                "value": "@pipeline().DataFactory",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipeline",
+                                            "value": {
+                                                "value": "@pipeline().Pipeline",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineRunId",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerId",
+                                            "value": {
+                                                "value": "@pipeline().TriggerId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTrigger",
+                                            "value": {
+                                                "value": "@pipeline().TriggerName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerType",
+                                            "value": {
+                                                "value": "@pipeline().TriggerType",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerTime",
+                                            "value": {
+                                                "value": "@pipeline().TriggerTime",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByPipeline",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByRunId",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineRunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadSource",
+                                            "value": {
+                                                "value": "@pipeline().parameters.pipelineParameters.rawDirectory",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    ]
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "DynamicsCRMEntity",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "serviceUri": {
+                                            "value": "@pipeline().parameters.pipelineParameters.server",
+                                            "type": "Expression"
+                                        },
+                                        "servicePrincipalID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.user",
+                                            "type": "Expression"
+                                        },
+                                        "secretName": {
+                                            "value": "@pipeline().parameters.pipelineParameters.secret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                            "type": "Expression"
+                                        },
+                                        "entity": {
+                                            "value": "@pipeline().parameters.pipelineParameters.table",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "Parquet_DataLake",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "datalakeURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.datalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.fileSystem)",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@toLower(variables('rawDirectory'))",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@toLower(variables('rawFileName'))",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Lookup Source For Data",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "DynamicsCrmSource"
+                    },
+                    "dataset": {
+                        "referenceName": "DynamicsCRMEntity",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "serviceUri": {
+                                "value": "@pipeline().parameters.pipelineParameters.server",
+                                "type": "Expression"
+                            },
+                            "servicePrincipalID": {
+                                "value": "@pipeline().parameters.pipelineParameters.user",
+                                "type": "Expression"
+                            },
+                            "secretName": {
+                                "value": "@pipeline().parameters.pipelineParameters.secret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                "type": "Expression"
+                            },
+                            "entity": {
+                                "value": "@pipeline().parameters.pipelineParameters.table",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "firstRowOnly": true
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "datalakeurl": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "sourceName": "MDS",
+                    "functionalArea": "Finance",
+                    "companyCode": "CTR",
+                    "fileSystem": "1-raw",
+                    "forceLoad": "False",
+                    "user": "svcCTRSynapseDEV@chhnet.net",
+                    "secret": "svcCTRSynapse",
+                    "watermarkField": "",
+                    "loadType": "FULL",
+                    "schema": "mdm",
+                    "authType": "Windows",
+                    "Server": "cartersmds.chhnet.net",
+                    "rawDirectory": "CTR/PROD/MDS/MDS",
+                    "table": "Finance_CustomerClass_To_Segment",
+                    "database": "MDS",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "IR": "OnPremises",
+                    "sourceType": "SQL",
+                    "mappingFieldsFilter": "SourceEntityNameId eq 163",
+                    "keyvaultURL": "https://carters-dev-synapse-kv.vault.azure.net",
+                    "functionAppURL": "https://carters-nonprod-synapse-ps-fnapp.azurewebsites.net",
+                    "powerShellFunctionServicePrincipalSecret": "CartersSynapsePowerShellFunctionServicePrincipal",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sharepointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "tenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "resourcePath": "",
+                    "entityFilter": "",
+                    "delimiter": "",
+                    "firstRowHeader": "True",
+                    "collectionReference": "",
+                    "entityType": "SQL"
+                }
+            }
+        },
+        "variables": {
+            "loadStart": {
+                "type": "String"
+            },
+            "loadQuery": {
+                "type": "String"
+            },
+            "loadData": {
+                "type": "Boolean"
+            },
+            "rawDirectory": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "rawFileName": {
+                "type": "String"
+            },
+            "entityFilter": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Sources"
+        },
+        "annotations": []
+    }
+}

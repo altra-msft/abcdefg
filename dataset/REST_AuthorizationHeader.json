@@ -1,0 +1,50 @@
+{
+    "name": "REST_AuthorizationHeader",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "REST_AuthorizationHeader",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "url": {
+                    "value": "@dataset().url",
+                    "type": "Expression"
+                },
+                "secret": {
+                    "value": "@dataset().secret",
+                    "type": "Expression"
+                },
+                "keyvaultURL": {
+                    "value": "@dataset().keyvaultURL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "url": {
+                "type": "string"
+            },
+            "secret": {
+                "type": "string"
+            },
+            "relativeUrl": {
+                "type": "string"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-kv.vault.azure.net/"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "RestResource",
+        "typeProperties": {
+            "relativeUrl": {
+                "value": "@dataset().relativeUrl",
+                "type": "Expression"
+            }
+        },
+        "schema": []
+    }
+}

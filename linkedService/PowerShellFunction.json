@@ -1,0 +1,45 @@
+{
+    "name": "PowerShellFunction",
+    "properties": {
+        "parameters": {
+            "functionAppURL": {
+                "type": "string"
+            },
+            "secretName": {
+                "type": "string"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "AzureFunction",
+        "typeProperties": {
+            "functionAppUrl": "@{linkedService().functionAppURL}",
+            "functionKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().secretName",
+                    "type": "Expression"
+                }
+            },
+            "authentication": "Anonymous"
+        },
+        "connectVia": {
+            "referenceName": "AutoScaleIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    },
+    "type": "Microsoft.Synapse/workspaces/linkedservices"
+}

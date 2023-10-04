@@ -1,0 +1,72 @@
+{
+    "name": "SQL_OnPremises_WindowsAuth",
+    "properties": {
+        "description": "Linked server should be changed to \"SQL_OnPremises_WindowsAuth\" once we have service account and secret available ",
+        "linkedServiceName": {
+            "referenceName": "SQL_OnPremises_WindowsAuth",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "server": {
+                    "value": "@dataset().server",
+                    "type": "Expression"
+                },
+                "database": {
+                    "value": "@dataset().database",
+                    "type": "Expression"
+                },
+                "user": {
+                    "value": "@dataset().user",
+                    "type": "Expression"
+                },
+                "secret": {
+                    "value": "@dataset().secret",
+                    "type": "Expression"
+                },
+                "keyvaultURL": {
+                    "value": "@dataset().keyvaultURL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "server": {
+                "type": "string"
+            },
+            "database": {
+                "type": "string"
+            },
+            "user": {
+                "type": "string"
+            },
+            "secret": {
+                "type": "string"
+            },
+            "schema": {
+                "type": "string"
+            },
+            "table": {
+                "type": "string"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-kv.vault.azure.net/"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "SqlServerTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schema",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().table",
+                "type": "Expression"
+            }
+        }
+    }
+}

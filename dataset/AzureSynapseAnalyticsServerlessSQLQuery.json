@@ -1,0 +1,34 @@
+{
+    "name": "AzureSynapseAnalyticsServerlessSQLQuery",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "Synapse_ServerlessSQLPool",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "database": {
+                    "value": "@dataset().database",
+                    "type": "Expression"
+                },
+                "server": {
+                    "value": "@dataset().synapseWorkspaceName",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "database": {
+                "type": "string"
+            },
+            "synapseWorkspaceName": {
+                "type": "string",
+                "defaultValue": "carters-dev-synapse-workspace"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "AzureSqlDWTable",
+        "schema": []
+    }
+}

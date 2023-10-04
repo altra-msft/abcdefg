@@ -1,0 +1,76 @@
+{
+    "name": "wait-Run",
+    "properties": {
+        "activities": [
+            {
+                "name": "Wait Until Run Completes",
+                "type": "Until",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(\n    or(\n        equals(activity('Get Active Pipeline Run Status').output.status,'Succeeded'),\n        equals(activity('Get Active Pipeline Run Status').output.status,'Failed')\n    ),\n    equals(activity('Get Active Pipeline Run Status').output.status,'Cancelled')\n)",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Wait for 30 secs",
+                            "type": "Wait",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "waitTimeInSeconds": 30
+                            }
+                        },
+                        {
+                            "name": "Get Active Pipeline Run Status",
+                            "description": "Get the status of the Pipeline in progress until it completes. This pipeline will get executed as per the output from the Filter activity which actually filters the pipeline name as per their status (Succeeded, Failed, Cancelled)",
+                            "type": "WebActivity",
+                            "dependsOn": [
+                                {
+                                    "activity": "Wait for 30 secs",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "00.00:10:00",
+                                "retry": 2,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    'https://'\n    ,pipeline().DataFactory\n    ,'.dev.azuresynapse.net/pipelineruns/'\n    ,pipeline().parameters.runId\n    ,'/?api-version=2020-12-01'\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "GET",
+                                "authentication": {
+                                    "type": "MSI",
+                                    "resource": "https://dev.azuresynapse.net"
+                                }
+                            }
+                        }
+                    ],
+                    "timeout": "7.00:00:00"
+                }
+            }
+        ],
+        "parameters": {
+            "runId": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities"
+        },
+        "annotations": []
+    }
+}

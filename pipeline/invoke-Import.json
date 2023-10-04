@@ -1,0 +1,385 @@
+{
+    "name": "invoke-Import",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Pipeline Run Status",
+                "description": "Get Pipeline Run Status",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:20:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    'https://'\n    ,pipeline().DataFactory\n    ,'.dev.azuresynapse.net/queryPipelineRuns?api-version=2020-12-01'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "POST",
+                    "body": {
+                        "value": "{\n  \"lastUpdatedAfter\": \"@{addHours(pipeline().TriggerTime,-10)}\",\n  \"lastUpdatedBefore\": \"@{pipeline().TriggerTime}\",\n  \"filters\": [\n    {\n      \"operand\": \"PipelineName\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"@{concat('import-'\n        ,pipeline().parameters.pipelineParameters.sourceType)}\"\n      ]\n    },\n    {\n      \"operand\": \"Status\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"InProgress\"\n      ]\n    }\n  ]\n}",
+                        "type": "Expression"
+                    },
+                    "authentication": {
+                        "type": "MSI",
+                        "resource": "https://dev.azuresynapse.net"
+                    }
+                }
+            },
+            {
+                "name": "Filter Pipeline",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get Pipeline Run Status",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Pipeline Run Status').output.value",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@equals(\n    item().parameters.pipelineParameters\n    , pipeline().parameters.pipelineParameters\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Check Pipeline already running",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Filter Pipeline",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(activity('Filter Pipeline').output.FilteredItemsCount, 0)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set sourceType to wait-run",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceType",
+                                "value": {
+                                    "value": "'WAIT-RUN'",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set InProgress Pipeline RunID",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "runningPipelineID",
+                                "value": {
+                                    "value": "@activity('Filter Pipeline').output.value[0].runId",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set sourceType",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "sourceType",
+                                "value": {
+                                    "value": "@toUpper(pipeline().parameters.pipelineParameters.sourceType)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Switch on Source Type",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "Check Pipeline already running",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@toUpper(pipeline().parameters.pipelineParameters.entityType)",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "WAIT-RUN",
+                            "activities": [
+                                {
+                                    "name": "Execute Wait-Run",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "wait-Run",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "runId": {
+                                                "value": "@variables('runningPipelineID')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "SQL",
+                            "activities": [
+                                {
+                                    "name": "Import SQL",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-SQL",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DELIMITED",
+                            "activities": [
+                                {
+                                    "name": "import Delimited",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-Delimited",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "LIST",
+                            "activities": [
+                                {
+                                    "name": "import SharePoint List",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-SharePoint-List",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "EROAD",
+                            "activities": [
+                                {
+                                    "name": "import-Eroad",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-Eroad",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DW",
+                            "activities": [
+                                {
+                                    "name": "import-DW",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-DW",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "VWORK",
+                            "activities": [
+                                {
+                                    "name": "import-Vwork",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-Vworks",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DYNAMICSCRM",
+                            "activities": [
+                                {
+                                    "name": "import-DynamicsCRM",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "import-DynamicsCRM",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "failWhenNoBrokerCalled",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": "No broker matched with switch case",
+                                "errorCode": "No broker matched with switch case"
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object"
+            }
+        },
+        "variables": {
+            "sourceType": {
+                "type": "String"
+            },
+            "runningPipelineID": {
+                "type": "String"
+            },
+            "defaultAdditionalColumns": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}
