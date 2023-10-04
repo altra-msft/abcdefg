@@ -1,0 +1,13 @@
+{
+	"name": "chucknorrisRest",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ChuckNorrisRestLS",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

@@ -2,17 +2,18 @@
 	"name": "Json1",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "AzureBlobStorage1",
+			"referenceName": "blobLSChuckNorris",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
 		"type": "Json",
 		"typeProperties": {
 			"location": {
-				"type": "AzureBlobStorageLocation"
+				"type": "AzureBlobStorageLocation",
+				"container": "somecontainer"
 			}
 		},
 		"schema": {}
 	},
-	"type": "Microsoft.DataFactory/factories/datasets"
+	"type": "Microsoft.Synapse/workspaces/datasets"
 }
