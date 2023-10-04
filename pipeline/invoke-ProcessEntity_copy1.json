@@ -1,0 +1,1472 @@
+{
+    "name": "invoke-ProcessEntity_copy1",
+    "properties": {
+        "activities": [
+            {
+                "name": "ForEach Presentation Dependency",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Bearer token",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@pipeline().parameters.dataEntityRecord.DependsOnId",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "data entity lookup on dependondataEntity Column",
+                            "description": "",
+                            "type": "WebActivity",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    pipeline().parameters.environmentDetails.SharePointURL\n    ,'/_api/lists/getbytitle(''LoadEntity'')/Items?$filter=ID eq '\n    ,''''\n    ,item()\n    ,''''\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "GET",
+                                "headers": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ',activity('get Bearer token').output.access_token)",
+                                        "type": "Expression"
+                                    },
+                                    "Accept": "application/json"
+                                }
+                            }
+                        },
+                        {
+                            "name": "lookup into presentation entity",
+                            "description": "on the basis of sourceEntityCodeId",
+                            "type": "WebActivity",
+                            "dependsOn": [
+                                {
+                                    "activity": "data entity lookup on dependondataEntity Column",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    pipeline().parameters.environmentDetails.SharePointURL\n    ,'/_api/lists/getbytitle(''PresentationEntity'')/Items?$filter=SourceEntityNameId eq '\n    ,''''\n    ,activity('data entity lookup on dependondataEntity Column').output.value[0].SourceEntityCodeId\n    ,''''\n\t\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "GET",
+                                "headers": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ',activity('get Bearer token').output.access_token)",
+                                        "type": "Expression"
+                                    },
+                                    "Accept": "application/json"
+                                }
+                            }
+                        },
+                        {
+                            "name": "presentationDependencies",
+                            "type": "AppendVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "lookup into presentation entity",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "check pres dependency raw load",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "presentationDependencies",
+                                "value": {
+                                    "value": "@concat('''',\n    activity('lookup into presentation entity').output.value[0].Title,'fileSystem'':''','3-presentation'\n    ,''','''\n    ,activity('lookup into presentation entity').output.value[0].Title,'fileName'':''',activity('lookup into presentation entity').output.value[0].Title\n    ,''','''\n    ,activity('lookup into presentation entity').output.value[0].Title,'rawDirectory'':''',if(contains(activity('Lookup Latest File in Raw for pres dependency').output, 'firstRow') ,join(\n        take(\n            skip(\n                split(\n                    activity('Lookup Latest File in Raw for pres dependency').output.firstRow.latestFile\n                    , '/')\n                , 4)\n        , sub(\n            length(\n                split(\n                    activity('Lookup Latest File in Raw for pres dependency').output.firstRow.latestFile\n                    , '/'))\n                , 5))\n        , '/'), '')\n    ,''','''\n    ,activity('lookup into presentation entity').output.value[0].Title,'directory'':''',toLower(pipeline().parameters.companyCode)\n                                                    ,'_'\n                                                    ,toLower(pipeline().parameters.functionalArea)\n,'''')",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "lookup on sourceEntity list for pres dependency",
+                            "description": "",
+                            "type": "WebActivity",
+                            "dependsOn": [
+                                {
+                                    "activity": "data entity lookup on dependondataEntity Column",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:10:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    pipeline().parameters.environmentDetails.SharePointURL\n    ,'/_api/lists/getbytitle(''SourceEntity'')/Items?$filter=ID eq '\n    ,''''\n    ,activity('data entity lookup on dependondataEntity Column').output.value[0].SourceEntityCodeId\n    ,''''\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "GET",
+                                "headers": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ',activity('get Bearer token').output.access_token)",
+                                        "type": "Expression"
+                                    },
+                                    "Accept": "application/json"
+                                }
+                            }
+                        },
+                        {
+                            "name": "check pres dependency raw load",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "lookup on sourceEntity list for pres dependency",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@bool(\n    coalesce(\n        activity('lookup on sourceEntity list for pres dependency').output.value[0].RawLoad\n        , false\n    )\n)",
+                                    "type": "Expression"
+                                },
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Lookup Latest File in Raw for pres dependency",
+                                        "type": "Lookup",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "lookup on sourceConnections for pres dependency",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "timeout": "0.00:20:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "SqlDWSource",
+                                                "sqlReaderQuery": {
+                                                    "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.environmentDetails.DatalakeURL\n        ,'/'\n        ,activity('lookup on sourceEntity list for pres dependency').output.value[0].RawFileSystem \n        ,'/'\n        ,toLower(pipeline().parameters.companyCode)\n        ,'/'\n        ,toLower(activity('lookup on sourceConnections for pres dependency').output.value[0].SourceEnvironmentValue)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list for pres dependency').output.value[0].RawDirectory)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list for pres dependency').output.value[0].Title)\n        ,'/year=*/month=*/day=*/*.parquet'',        FORMAT=''PARQUET''\n    ) AS [result]'\n)\n",
+                                                    "type": "Expression"
+                                                },
+                                                "queryTimeout": "02:00:00",
+                                                "partitionOption": "None"
+                                            },
+                                            "dataset": {
+                                                "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "database": {
+                                                        "value": "default",
+                                                        "type": "Expression"
+                                                    },
+                                                    "synapseWorkspaceName": {
+                                                        "value": "@pipeline().DataFactory",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "firstRowOnly": true
+                                        }
+                                    },
+                                    {
+                                        "name": "lookup on sourceConnections for pres dependency",
+                                        "type": "Lookup",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "timeout": "0.12:00:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "SharePointOnlineListSource",
+                                                "query": {
+                                                    "value": "$filter=CompanyCode eq '@{pipeline().parameters.companyCode}' \n    and \n    SourceName eq '@{activity('lookup on sourceEntity list for pres dependency').output.value[0].SourceName}'\n    and \n    EnvironmentValue eq '@{pipeline().DataFactory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "httpRequestTimeout": "00:05:00"
+                                            },
+                                            "dataset": {
+                                                "referenceName": "SharePointList",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "list": "SourceConnection",
+                                                    "sharepointURL": {
+                                                        "value": "@pipeline().parameters.environmentDetails.sharePointURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "tenantID": {
+                                                        "value": "@pipeline().parameters.environmentDetails.tenantID",
+                                                        "type": "Expression"
+                                                    },
+                                                    "sharepointServicePrincipalID": {
+                                                        "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalID",
+                                                        "type": "Expression"
+                                                    },
+                                                    "sharepointServicePrincipalSecret": {
+                                                        "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalSecret",
+                                                        "type": "Expression"
+                                                    },
+                                                    "keyvaultURL": {
+                                                        "value": "@pipeline().parameters.environmentDetails.keyvaultURL",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "firstRowOnly": false
+                                        }
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "ForEach RAW Dependency",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "ForEach Sink Entity",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('lookup on sourceEntity list').output.value[0].DependsOnRawId",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "lookup on sourceEntity list for dependonraw entities",
+                            "description": "",
+                            "type": "WebActivity",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    pipeline().parameters.environmentDetails.SharePointURL\n    ,'/_api/lists/getbytitle(''SourceEntity'')/Items?$filter=ID eq '\n    ,''''\n    ,item()\n    ,''''\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "GET",
+                                "headers": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ',activity('get Bearer token').output.access_token)",
+                                        "type": "Expression"
+                                    },
+                                    "Accept": "application/json"
+                                }
+                            }
+                        },
+                        {
+                            "name": "If Raw Load is True",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "lookup on sourceConnections for dependonraw entities",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@bool(\n    coalesce(\n        activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawLoad\n        , false\n    )\n)",
+                                    "type": "Expression"
+                                },
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "dataflow dependencies for datalake source",
+                                        "type": "AppendVariable",
+                                        "dependsOn": [],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "dataflowDependencies",
+                                            "value": {
+                                                "value": "@concat(''''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,'rawFileSystem'':''',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawFileSystem,''','''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,'rawDirectory'':''',concat(activity('lookup on sourceConnections list').output.value[0].DatalakeRootDirectory\n        ,'/'\n        ,join(take(split(activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawDirectory,'/')\n        ,sub(length(split(activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawDirectory,'/')),1))\n        ,'/')),''','''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,'table'':''',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,''','''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,'rawFileName'':''',last(split(activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawDirectory,'/')),'''')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Append dataflowDependencies",
+                                        "type": "AppendVariable",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Get RAW dependency metadata",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "dataflowDependencies",
+                                            "value": {
+                                                "value": "@concat(''''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title\n,'rawFileSystem'':''',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawFileSystem,''', '''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title\n,'rawFileName'':''',last(\n    split(\n        activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile\n        , '/')\n)\n,''', '''\n,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title\n,'rawDirectory'':''',join(\n    take(\n        skip(\n            split(\n                activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile\n                , '/')\n            , 4)\n        , sub(\n            length(\n                split(\n                    activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile\n                    , '/'))\n            , 5))\n    , '/'),'''')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Append dependency processData",
+                                        "type": "AppendVariable",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Get RAW dependency metadata",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "processData",
+                                            "value": {
+                                                "value": "@greater(activity('Get RAW dependency metadata').output.lastModified,pipeline().TriggerTime)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Lookup Latest File in Raw for DataFlow",
+                                        "type": "Lookup",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Load dependency",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "timeout": "0.00:20:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "source": {
+                                                "type": "SqlDWSource",
+                                                "sqlReaderQuery": {
+                                                    "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.environmentDetails.DatalakeURL\n        ,'/'\n        ,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawFileSystem \n        ,'/'\n        ,toLower(pipeline().parameters.companyCode)\n        ,'/'\n        ,toLower(activity('lookup on sourceConnections for dependonraw entities').output.value[0].SourceEnvironmentValue)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawDirectory)\n        ,'/'\n        ,activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title\n        ,'/year=*/month=*/day=*/*.parquet'',        FORMAT=''PARQUET''\n    ) AS [result]')",
+                                                    "type": "Expression"
+                                                },
+                                                "queryTimeout": "02:00:00",
+                                                "partitionOption": "None"
+                                            },
+                                            "dataset": {
+                                                "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "database": {
+                                                        "value": "default",
+                                                        "type": "Expression"
+                                                    },
+                                                    "synapseWorkspaceName": {
+                                                        "value": "@pipeline().DataFactory",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "firstRowOnly": true
+                                        }
+                                    },
+                                    {
+                                        "name": "Get RAW dependency metadata",
+                                        "type": "GetMetadata",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Lookup Latest File in Raw for DataFlow",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "policy": {
+                                            "timeout": "0.00:20:00",
+                                            "retry": 0,
+                                            "retryIntervalInSeconds": 30,
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "dataset": {
+                                                "referenceName": "Parquet_DataLake",
+                                                "type": "DatasetReference",
+                                                "parameters": {
+                                                    "datalakeURL": {
+                                                        "value": "@pipeline().parameters.environmentDetails.DatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawFileSystem",
+                                                        "type": "Expression"
+                                                    },
+                                                    "directory": {
+                                                        "value": "@substring(\n    activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile\n    ,add(\n        indexOf(\n            activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile,'1-raw'),6)\n    ,sub(\n        lastIndexOf(activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile,'/')\n        ,add(\n            indexOf(\n                activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile,'1-raw'),6)\n    )\n    )",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileName": {
+                                                        "value": "@last(\n    split(\n        activity('Lookup Latest File in Raw for DataFlow').output.firstRow.latestFile\n        ,'/'\n    )\n)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "fieldList": [
+                                                "exists",
+                                                "itemName",
+                                                "itemType",
+                                                "lastModified"
+                                            ],
+                                            "storeSettings": {
+                                                "type": "AzureBlobFSReadSettings",
+                                                "recursive": true,
+                                                "enablePartitionDiscovery": false
+                                            },
+                                            "formatSettings": {
+                                                "type": "ParquetReadSettings"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Load dependency",
+                                        "type": "ExecutePipeline",
+                                        "dependsOn": [],
+                                        "userProperties": [
+                                            {
+                                                "name": "entity",
+                                                "value": "@variables('dependEntity')"
+                                            },
+                                            {
+                                                "name": "sourceName",
+                                                "value": "@activity('lookup on sourceEntity list for dependonraw entities').output.value[0].SourceName"
+                                            },
+                                            {
+                                                "name": "sourceType",
+                                                "value": "@activity('lookup on sourceConnections list').output.value[0].SourceConnectionType"
+                                            }
+                                        ],
+                                        "typeProperties": {
+                                            "pipeline": {
+                                                "referenceName": "invoke-Import",
+                                                "type": "PipelineReference"
+                                            },
+                                            "waitOnCompletion": true,
+                                            "parameters": {
+                                                "pipelineParameters": {
+                                                    "value": "@json(\n    concat(\n    '{'\n    ,'\"datalakeurl\":\"',pipeline().parameters.environmentDetails.DatalakeURL,'\",'\n    ,'\"sourceName\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].SourceName,'\",'\n    ,'\"functionalArea\":\"',pipeline().parameters.functionalArea,'\",'\n    ,'\"companyCode\":\"',pipeline().parameters.companyCode,'\",'\n    ,'\"fileSystem\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawFileSystem,'\",'\n    ,'\"forceLoad\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].ForceLoad,'\",'\n    ,'\"user\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].UserName,'\",'\n    ,'\"secret\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].UserSecret,'\",'\n    ,'\"watermarkField\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].WatermarkField,'\",'\n    ,'\"loadType\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].LoadType,'\",'\n    ,'\"schema\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].Schema,'\",'\n    ,'\"authType\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].AuthenticationTypeValue,'\",'\n    ,'\"server\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].Server,'\",'\n    ,'\"rawDirectory\":\"',concat(pipeline().parameters.companyCode,'/',activity('lookup on sourceConnections for dependonraw entities').output.value[0].SourceEnvironmentValue,'/',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].RawDirectory),'\",'\n    ,'\"table\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Title,'\",'\n    ,'\"database\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].SqlDatabase,'\",'\n    ,'\"localTimeZone\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].LocalTimeZoneValue,'\",'\n    ,'\"IR\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].IntegratedRuntimeValue,'\",'\n    ,'\"sourceType\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].SourceConnectionTypeValue,'\",'\n    ,'\"keyvaultURL\":\"',pipeline().parameters.environmentDetails.KeyVaultURL,'\",'\n    ,'\"mappingFieldsFilter\":\"',concat('SourceEntityNameId eq ',pipeline().parameters.dataEntityRecord.sourceEntityCodeID),'\",'\n    ,'\"keyvaultURL\":\"',pipeline().parameters.environmentDetails.KeyVaultURL,'\",'\n    ,'\"functionAppURL\":\"',pipeline().parameters.environmentDetails.FunctionAppURL,'\",'\n    ,'\"powerShellFunctionServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.PowerShellFunctionServicePrincipalSecret,'\",'\n    ,'\"sharePointURL\":\"',pipeline().parameters.environmentDetails.SharePointURL,'\",'\n    ,'\"sharepointServicePrincipalID\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalID,'\",'\n    ,'\"sharepointServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalSecret,'\",'\n    ,'\"sharepointTenantId\":\"',pipeline().parameters.environmentDetails.TenantId,'\",'\n    ,'\"tenantId\":\"',activity('lookup on sourceConnections for dependonraw entities').output.value[0].Tenant,'\",'\n    ,'\"resourcePath\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].ResourcePath,'\",'\n    ,'\"entityFilter\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].EntityFilter,'\",'\n    ,'\"delimiter\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].Delimiter,'\",'\n    ,'\"firstRowHeader\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].FirstRowHeader,'\",'\n    ,'\"collectionReference\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].CollectionReference,'\",'\n    ,'\"entityType\":\"',activity('lookup on sourceEntity list for dependonraw entities').output.value[0].EntityType,'\"'\n    ,'}'\n    )\n)",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "lookup on sourceConnections for dependonraw entities",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "lookup on sourceEntity list for dependonraw entities",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SharePointOnlineListSource",
+                                    "query": {
+                                        "value": "$filter=CompanyCode eq '@{pipeline().parameters.companyCode}' \n    and \n    SourceName eq '@{activity('lookup on sourceEntity list for dependonraw entities').output.value[0].SourceName}'\n    and \n    EnvironmentValue eq '@{pipeline().DataFactory}'",
+                                        "type": "Expression"
+                                    },
+                                    "httpRequestTimeout": "00:05:00"
+                                },
+                                "dataset": {
+                                    "referenceName": "SharePointList",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "list": "SourceConnection",
+                                        "sharepointURL": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharePointURL",
+                                            "type": "Expression"
+                                        },
+                                        "tenantID": {
+                                            "value": "@pipeline().parameters.environmentDetails.tenantID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalID": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalSecret": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalSecret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.environmentDetails.keyvaultURL",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Process data",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check Load Raw",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(\n    contains(variables('processData'),true)\n    ,bool(\n        coalesce(\n            pipeline().parameters.dataEntityRecord.ForceProcessing\n            ,pipeline().parameters.forceFullReprocess\n            , false\n        )\n    )\n)",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "invoke-Transform",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [
+                                {
+                                    "name": "dataflow",
+                                    "value": "@pipeline().parameters.dataEntityRecord.Dataflow"
+                                },
+                                {
+                                    "name": "entity",
+                                    "value": "@activity('lookup on sourceEntity list').output.value[0].Title"
+                                },
+                                {
+                                    "name": "sourceName",
+                                    "value": "@activity('lookup on sourceEntity list').output.value[0].SourceName"
+                                }
+                            ],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "invoke-Transform",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "pipelineParameters": {
+                                        "value": "@json(\n    concat(\n    '{'\n        ,'\"rawDatalakeURL\":\"',if(\n            equals(activity('lookup on sourceConnections list').output.value[0].SourceConnectionTypeValue,'Datalake')\n            ,activity('lookup on sourceConnections list').output.value[0].server\n            ,pipeline().parameters.environmentDetails.DatalakeURL),'\",'\n        ,'\"localTimeZone\":\"',activity('lookup on sourceConnections list').output.value[0].LocalTimeZoneValue,'\",'\n        ,'\"stageDataFormat\":\"',pipeline().parameters.dataEntityRecord.StageDataFormat,'\",'\n        ,'\"dataflow\":\"',pipeline().parameters.dataEntityRecord.Dataflow,'\",'\n        ,'\"dataflowVersion\":\"',pipeline().parameters.dataEntityRecord.DataflowVersion,'\",'\n        ,'\"processDelta\":\"',string(not(bool(pipeline().parameters.forceFullReprocess))),'\",'\n        ,'\"loadEntityId\":\"',pipeline().parameters.dataEntityRecord.ID,'\",'\n        ,'\"keyVaultURL\":\"',pipeline().parameters.environmentDetails.KeyVaultURL,'\",'\n        ,'\"sharePointURL\":\"',pipeline().parameters.environmentDetails.SharePointURL,'\",'\n        ,'\"tenantId\":\"',pipeline().parameters.environmentDetails.TenantId,'\",'\n        ,'\"sharePointServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalSecret,'\",'\n        ,'\"sharepointServicePrincipalID\":\"',pipeline().parameters.environmentDetails.SharepointServicePrincipalID,'\",'\n        ,'\"sourceName\":\"',activity('lookup on sourceEntity list').output.value[0].SourceName,'\",'\n        ,'\"loadType\":\"',activity('lookup on sourceEntity list').output.value[0].LoadType,'\",'\n        ,'\"rawFileSystem\":\"',activity('lookup on sourceEntity list').output.value[0].RawFileSystem,'\",'\n        ,'\"rawDirectory\":\"',if(activity('lookup on sourceEntity list').output.value[0].RawLoad,\n            join(\n        take(\n            skip(\n                split(\n                    activity('Lookup Latest File in Raw').output.firstRow.latestFile\n                    , '/')\n                , 4)\n        , sub(\n            length(\n                split(\n                    activity('Lookup Latest File in Raw').output.firstRow.latestFile\n                    , '/'))\n                , 5))\n        , '/'),concat(activity('lookup on sourceConnections list').output.value[0].DatalakeRootDirectory\n        ,'/'\n        ,join(take(split(activity('lookup on sourceEntity list').output.value[0].RawDirectory,'/')\n            ,sub(length(split(activity('lookup on sourceEntity list').output.value[0].RawDirectory,'/')),1))\n    ,'/'))),'\",'\n        ,'\"rawFileName\":\"',if(activity('lookup on sourceEntity list').output.value[0].RawLoad\n        ,last(\n        split(\n            activity('Lookup Latest File in Raw').output.firstRow.latestFile, '/')\n            )\n            ,last(split(activity('lookup on sourceEntity list').output.value[0].RawDirectory,'/')))\n            ,'\",'\n        ,'\"rawEntity\":\"',activity('lookup on sourceEntity list').output.value[0].Title,'\",'\n        ,'\"stagingDatalakeURL\":\"',pipeline().parameters.environmentDetails.DatalakeURL,'\",'\n        ,'\"stagingFileSystem\":\"',activity('lookup on sourceEntity list').output.value[0].StagingFileSystem,'\",'\n        ,'\"stagingDirectory\":\"',concat(pipeline().parameters.companyCode,'/',activity('lookup on sourceConnections list').output.value[0].SourceEnvironmentValue,'/',activity('lookup on sourceEntity list').output.value[0].StagingDirectory),'\",'\n        ,'\"database\":\"',toLower(concat(\n    pipeline().parameters.companyCode\n    ,'_'\n    ,pipeline().parameters.functionalArea\n)\n),'\",'\n        ,'\"schema\":\"','dbo','\",'\n        ,'\"sqlDatabase\":\"',activity('lookup on sourceConnections list').output.value[0].SqlDatabase,'\",'\n        ,'\"keyColumns\":\"',pipeline().parameters.dataEntityRecord.KeyColumn,'\",'\n        ,'\"localiseDateTime\":\"',pipeline().parameters.dataEntityRecord.LocaliseDateTime,'\",'\n        ,'\"dataflowDependencies\":\"',concat('{',join(variables('dataflowDependencies'),','),'}'),'\",'\n        ,'\"presentationDependencies\":\"',concat('{',join(variables('presentationDependencies'),','),'}'),'\"'      \n    ,'}'\n    )\n)",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "lookup on sourceEntity list",
+                "description": "",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "Get Bearer token",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    pipeline().parameters.environmentDetails.SharePointURL\n    ,'/_api/lists/getbytitle(''SourceEntity'')/Items?$filter=ID eq '\n    ,''''\n    ,pipeline().parameters.dataEntityRecord.SourceEntityCodeId\n    ,''''\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "GET",
+                    "headers": {
+                        "Authorization": {
+                            "value": "@concat('Bearer ',activity('get Bearer token').output.access_token)",
+                            "type": "Expression"
+                        },
+                        "Accept": "application/json"
+                    }
+                }
+            },
+            {
+                "name": "Get ClientSecret",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    pipeline().parameters.environmentDetails.KeyVaultURL\n    ,'/secrets/'\n    ,pipeline().parameters.environmentDetails.SharePointServicePrincipalSecret\n    ,'?api-version=7.0'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "GET",
+                    "authentication": {
+                        "type": "MSI",
+                        "resource": "https://vault.azure.net"
+                    }
+                }
+            },
+            {
+                "name": "Get Bearer token",
+                "description": "Get Bearer token for SharePoint \nupdate it using variable values",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "Get ClientSecret",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": true,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    'https://accounts.accesscontrol.windows.net/'\n    ,pipeline().parameters.environmentDetails.TenantId\n    ,'/tokens/OAuth/2'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    "body": {
+                        "value": "@concat(\n    'grant_type=client_credentials&client_id='\n        ,pipeline().parameters.environmentDetails.SharepointServicePrincipalID\n        ,'@',pipeline().parameters.environmentDetails.TenantId\n    ,'&client_secret=',activity('Get ClientSecret').output.value\n    ,'&resource=00000003-0000-0ff1-ce00-000000000000/carterholtharvey.sharepoint.com@'\n    ,pipeline().parameters.environmentDetails.TenantId)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "ForEach Presentation Entity",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Process data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('lookup for presentation Entity').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "If Staging to Presentation",
+                            "description": "check if presentation table does not exist then enforce copy from stage to presentation to cover different functional area load",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Presentation table metadata",
+                                    "dependencyConditions": [
+                                        "Completed"
+                                    ]
+                                },
+                                {
+                                    "activity": "Lookup Latest File in Staging",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@and(\n    or(\n        contains(variables('processData'),true)\n        ,if(\n            not(contains(activity('Get Presentation table metadata').output,'exists'))\n            ,true\n            ,if(\n                activity('Get Presentation table metadata').output.exists\n                ,false\n                ,true\n            )\n        )\n\t)\n    ,not(equals(activity('Lookup Latest File in Staging').output.firstRow.latestFile, null))\n)",
+                                    "type": "Expression"
+                                },
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "invoke-Present",
+                                        "type": "ExecutePipeline",
+                                        "dependsOn": [],
+                                        "userProperties": [
+                                            {
+                                                "name": "presentationTable",
+                                                "value": "@variables('presentationTableName')"
+                                            },
+                                            {
+                                                "name": "destinationFile",
+                                                "value": "@concat(activity('lookup on sourceEntity list').output.value[0].Title,'.','parquet')"
+                                            }
+                                        ],
+                                        "typeProperties": {
+                                            "pipeline": {
+                                                "referenceName": "invoke-Present",
+                                                "type": "PipelineReference"
+                                            },
+                                            "waitOnCompletion": true,
+                                            "parameters": {
+                                                "pipelineParameters": {
+                                                    "value": "@json(\n    concat(\n    '{'\n        ,'\"stageDataFormat\":\"',pipeline().parameters.dataEntityRecord.StageDataFormat,'\",'\n        ,'\"datalakeURL\":\"',pipeline().parameters.environmentDetails.DatalakeURL,'\",'\n        ,'\"sourceFileSystem\":\"',activity('lookup on sourceEntity list').output.value[0].StagingFileSystem,'\",'\n        ,'\"sourceDirectory\":\"',join(\n    take(\n        skip(\n            split(\n                activity('Lookup Latest File in Staging').output.firstRow.latestFile\n                , '/')\n            , 4)\n        , sub(\n            length(\n                split(\n                    activity('Lookup Latest File in Staging').output.firstRow.latestFile\n                    , '/'))\n            , 5))\n    , '/'),'\",'\n        ,'\"sourceFile\":\"',last(\n    split(\n        activity('Lookup Latest File in Staging').output.firstRow.latestFile\n        , '/')\n),'\",'\n        ,'\"destinationFileSystem\":\"',activity('lookup on sourceEntity list').output.value[0].PresentationFileSystem,'\",'\n        ,'\"destinationDirectory\":\"',toLower(concat(pipeline().parameters.companyCode,'_',pipeline().parameters.functionalArea,'/',variables('presentationTableName'))),'\",'\n        ,'\"destinationFile\":\"',concat(variables('presentationTableName'),'.','parquet'),'\",'\n        ,'\"mappingFieldsFilter\":\"',concat('SourceEntityNameId eq ',pipeline().parameters.dataEntityRecord.sourceEntityCodeID),'\",'\n        ,'\"database\":\"',toLower(concat(\n    pipeline().parameters.companyCode\n    ,'_'\n    ,pipeline().parameters.functionalArea\n)\n),'\",'\n        ,'\"schema\":\"','dbo','\",'\n        ,'\"table\":\"',variables('presentationTableName'),'\",'\n        ,'\"functionAppURL\":\"',pipeline().parameters.environmentDetails.FunctionAppURL,'\",'\n        ,'\"powerShellFunctionServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.PowerShellFunctionServicePrincipalSecret,'\",'\n        ,'\"sharePointURL\":\"',pipeline().parameters.environmentDetails.SharePointURL,'\",'\n        ,'\"tenantID\":\"',pipeline().parameters.environmentDetails.TenantId,'\",'\n        ,'\"sharepointServicePrincipalID\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalID,'\",'\n        ,'\"sharepointServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalSecret,'\",'\n        ,'\"keyvaultURL\":\"',pipeline().parameters.environmentDetails.KeyVaultURL,'\"'\n    ,'}'\n    )\n)",
+                                                    "type": "Expression"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "presentationTableName",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "presentationTableName",
+                                "value": {
+                                    "value": "@toLower(item().Title)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Presentation table metadata",
+                            "type": "GetMetadata",
+                            "dependsOn": [
+                                {
+                                    "activity": "presentationTableName",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLTable",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "@toLower(concat(\n    pipeline().parameters.companyCode\n    ,'_'\n    ,pipeline().parameters.functionalArea\n)\n)",
+                                            "type": "Expression"
+                                        },
+                                        "schema": {
+                                            "value": "dbo",
+                                            "type": "Expression"
+                                        },
+                                        "table": {
+                                            "value": "@toLower(variables('presentationTableName'))",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "fieldList": [
+                                    "exists"
+                                ]
+                            }
+                        },
+                        {
+                            "name": "Lookup Latest File in Staging",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "lookup on loadEntity for dataflowVersion",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.02:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK'''\n        ,pipeline().parameters.environmentDetails.DatalakeURL\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list').output.value[0].StagingFileSystem)\n        ,'/'\n        ,toLower(pipeline().parameters.companyCode)\n        ,'/'\n        ,toLower(activity('lookup on sourceConnections list').output.value[0].SourceEnvironmentValue)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list').output.value[0].StagingDirectory)\n        ,'/'\n        ,toLower(item().Title)\n        ,if(\n            equals(\n                toUpper(pipeline().parameters.dataEntityRecord.StageDataFormat)\n                ,'PARQUET'\n            )\n            ,'/year=*/month=*/day=*/*.parquet'\n            ,concat('/v',activity('lookup on loadEntity for dataflowVersion').output.value[0].dataFlowVersion)\n        ) \n        ,''',FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": true
+                            }
+                        },
+                        {
+                            "name": "lookup on loadEntity for dataflowVersion",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SharePointOnlineListSource",
+                                    "query": {
+                                        "value": "$filter=Id eq @{pipeline().parameters.dataEntityRecord.ID}",
+                                        "type": "Expression"
+                                    },
+                                    "httpRequestTimeout": "00:05:00"
+                                },
+                                "dataset": {
+                                    "referenceName": "SharePointList",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "list": "LoadEntity",
+                                        "sharepointURL": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharePointURL",
+                                            "type": "Expression"
+                                        },
+                                        "tenantID": {
+                                            "value": "@pipeline().parameters.environmentDetails.tenantID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalID": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalID",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalSecret": {
+                                            "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalSecret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.environmentDetails.keyvaultURL",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": false
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Check Load Raw",
+                "description": "if loadRaw in the source entity list is configured as False this means we are not loading the data from source to 1-raw.\nHence else of the if condition will Append true to processData, this ensures that data is always loaded from raw to stage.",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "ForEach RAW Dependency",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "ForEach Presentation Dependency",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@bool(\n    coalesce(\n        activity('lookup on sourceEntity list').output.value[0].RawLoad\n        , false\n    )\n)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Append processData for RawLoad False",
+                            "description": "This is for the source entities that are not loaded from source to 1-raw but we need to load them from external raw to staging.",
+                            "type": "AppendVariable",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "processData",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Generic Entity Import to RAW",
+                            "type": "ExecutePipeline",
+                            "dependsOn": [],
+                            "userProperties": [
+                                {
+                                    "name": "entity",
+                                    "value": "@activity('lookup on sourceEntity list').output.value[0].Title"
+                                },
+                                {
+                                    "name": "sourceName",
+                                    "value": "@activity('lookup on sourceEntity list').output.value[0].SourceName"
+                                },
+                                {
+                                    "name": "sourceType",
+                                    "value": "@activity('lookup on sourceConnections list').output.value[0].SourceConnectionType"
+                                }
+                            ],
+                            "typeProperties": {
+                                "pipeline": {
+                                    "referenceName": "invoke-Import",
+                                    "type": "PipelineReference"
+                                },
+                                "waitOnCompletion": true,
+                                "parameters": {
+                                    "pipelineParameters": {
+                                        "value": "@json(\n    concat(\n    '{'\n    ,'\"datalakeurl\":\"',pipeline().parameters.environmentDetails.DatalakeURL,'\",'\n    ,'\"sourceName\":\"',activity('lookup on sourceEntity list').output.value[0].SourceName,'\",'\n    ,'\"functionalArea\":\"',pipeline().parameters.functionalArea,'\",'\n    ,'\"companyCode\":\"',pipeline().parameters.companyCode,'\",'\n    ,'\"fileSystem\":\"',activity('lookup on sourceEntity list').output.value[0].RawFileSystem,'\",'\n    ,'\"forceLoad\":\"',activity('lookup on sourceEntity list').output.value[0].ForceLoad,'\",'\n    ,'\"user\":\"',activity('lookup on sourceConnections list').output.value[0].UserName,'\",'\n    ,'\"secret\":\"',activity('lookup on sourceConnections list').output.value[0].UserSecret,'\",'\n    ,'\"watermarkField\":\"',activity('lookup on sourceEntity list').output.value[0].WatermarkField,'\",'\n    ,'\"loadType\":\"',activity('lookup on sourceEntity list').output.value[0].LoadType,'\",'\n    ,'\"schema\":\"',activity('lookup on sourceConnections list').output.value[0].Schema,'\",'\n    ,'\"authType\":\"',activity('lookup on sourceConnections list').output.value[0].AuthenticationTypeValue,'\",'\n    ,'\"Server\":\"',activity('lookup on sourceConnections list').output.value[0].Server,'\",'\n    ,'\"rawDirectory\":\"',concat(pipeline().parameters.companyCode,'/',activity('lookup on sourceConnections list').output.value[0].SourceEnvironmentValue,'/',activity('lookup on sourceEntity list').output.value[0].RawDirectory),'\",'\n    ,'\"table\":\"',activity('lookup on sourceEntity list').output.value[0].Title,'\",'\n    ,'\"database\":\"',activity('lookup on sourceConnections list').output.value[0].SqlDatabase,'\",'\n    ,'\"localTimeZone\":\"',activity('lookup on sourceConnections list').output.value[0].LocalTimeZoneValue,'\",'\n    ,'\"IR\":\"',activity('lookup on sourceConnections list').output.value[0].IntegratedRuntimeValue,'\",'\n    ,'\"sourceType\":\"',activity('lookup on sourceConnections list').output.value[0].SourceConnectionTypeValue,'\",'\n    ,'\"mappingFieldsFilter\":\"',concat('SourceEntityNameId eq ',pipeline().parameters.dataEntityRecord.sourceEntityCodeID),'\",'\n    ,'\"keyvaultURL\":\"',pipeline().parameters.environmentDetails.KeyVaultURL,'\",'\n    ,'\"functionAppURL\":\"',pipeline().parameters.environmentDetails.FunctionAppURL,'\",'\n    ,'\"powerShellFunctionServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.PowerShellFunctionServicePrincipalSecret,'\",'\n    ,'\"sharePointURL\":\"',pipeline().parameters.environmentDetails.SharePointURL,'\",'\n    ,'\"sharepointServicePrincipalID\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalID,'\",'\n    ,'\"sharepointServicePrincipalSecret\":\"',pipeline().parameters.environmentDetails.SharePointServicePrincipalSecret,'\",'\n    ,'\"sharepointTenantId\":\"',pipeline().parameters.environmentDetails.TenantId,'\",'\n    ,'\"tenantId\":\"',activity('lookup on sourceConnections list').output.value[0].Tenant,'\",'\n    ,'\"resourcePath\":\"',activity('lookup on sourceEntity list').output.value[0].ResourcePath,'\",'\n    ,'\"entityFilter\":\"',activity('lookup on sourceEntity list').output.value[0].EntityFilter,'\",'\n    ,'\"delimiter\":\"',activity('lookup on sourceEntity list').output.value[0].Delimiter,'\",'\n    ,'\"firstRowHeader\":\"',activity('lookup on sourceEntity list').output.value[0].FirstRowHeader,'\",'\n    ,'\"collectionReference\":\"',activity('lookup on sourceEntity list').output.value[0].CollectionReference,'\",'\n    ,'\"entityType\":\"',activity('lookup on sourceEntity list').output.value[0].EntityType,'\"'\n    ,'}'\n    )\n)",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Lookup Latest File in Raw",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Generic Entity Import to RAW",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK ''',pipeline().parameters.environmentDetails.DatalakeURL\n        ,'/'\n        ,activity('lookup on sourceEntity list').output.value[0].RawFileSystem\n        ,'/'\n        ,toLower(pipeline().parameters.companyCode)\n        ,'/'\n        ,toLower(activity('lookup on sourceConnections list').output.value[0].SourceEnvironmentValue)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list').output.value[0].RawDirectory)\n        ,'/'\n        ,toLower(activity('lookup on sourceEntity list').output.value[0].Title)\n        ,'/year=*/month=*/day=*/*.parquet'',        FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "firstRowOnly": true
+                            }
+                        },
+                        {
+                            "name": "Get RAW file metadata",
+                            "description": "need to correct the expression",
+                            "type": "GetMetadata",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest File in Raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "Parquet_DataLake",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "datalakeURL": {
+                                            "value": "@pipeline().parameters.environmentDetails.DatalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@activity('lookup on sourceEntity list').output.value[0].RawFileSystem",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@substring(\n    activity('Lookup Latest File in Raw').output.firstRow.latestFile\n    ,add(\n        indexOf(\n            activity('Lookup Latest File in Raw').output.firstRow.latestFile,'1-raw'),6)\n    ,sub(\n        lastIndexOf(activity('Lookup Latest File in Raw').output.firstRow.latestFile,'/')\n        ,add(\n            indexOf(\n                activity('Lookup Latest File in Raw').output.firstRow.latestFile,'1-raw'),6)\n    )\n    )",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@last(\n    split(activity('Lookup Latest File in Raw').output.firstRow.latestFile\n    ,'/')\n    )",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "fieldList": [
+                                    "exists",
+                                    "itemName",
+                                    "itemType",
+                                    "lastModified"
+                                ],
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "ParquetReadSettings"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Append processData",
+                            "type": "AppendVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get RAW file metadata",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "processData",
+                                "value": {
+                                    "value": "@greater(activity('Get RAW file metadata').output.lastModified,pipeline().TriggerTime)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "lookup for presentation Entity",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "lookup on sourceEntity list",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SharePointOnlineListSource",
+                        "query": {
+                            "value": "$filter=SourceEntityNameId eq @{activity('lookup on sourceEntity list').output.value[0].ID}",
+                            "type": "Expression"
+                        },
+                        "httpRequestTimeout": "00:05:00"
+                    },
+                    "dataset": {
+                        "referenceName": "SharePointList",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "list": "PresentationEntity",
+                            "sharepointURL": {
+                                "value": "@pipeline().parameters.environmentDetails.sharePointURL",
+                                "type": "Expression"
+                            },
+                            "tenantID": {
+                                "value": "@pipeline().parameters.environmentDetails.tenantID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalID": {
+                                "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalSecret": {
+                                "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalSecret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.environmentDetails.keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "lookup on sourceConnections list",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "lookup on sourceEntity list",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SharePointOnlineListSource",
+                        "query": {
+                            "value": "$filter=CompanyCode eq '@{pipeline().parameters.companyCode}' \n    and \n    SourceName eq '@{activity('lookup on sourceEntity list').output.value[0].SourceName}'\n    and \n    EnvironmentValue eq '@{pipeline().DataFactory}'",
+                            "type": "Expression"
+                        },
+                        "httpRequestTimeout": "00:05:00"
+                    },
+                    "dataset": {
+                        "referenceName": "SharePointList",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "list": "SourceConnection",
+                            "sharepointURL": {
+                                "value": "@pipeline().parameters.environmentDetails.sharePointURL",
+                                "type": "Expression"
+                            },
+                            "tenantID": {
+                                "value": "@pipeline().parameters.environmentDetails.tenantID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalID": {
+                                "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalSecret": {
+                                "value": "@pipeline().parameters.environmentDetails.sharepointServicePrincipalSecret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.environmentDetails.keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "ForEach Sink Entity",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "lookup for presentation Entity",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "lookup on sourceConnections list",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('lookup for presentation Entity').output.value",
+                        "type": "Expression"
+                    },
+                    "isSequential": true,
+                    "activities": [
+                        {
+                            "name": "Append Dataflow Dependencies",
+                            "type": "AppendVariable",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "dataflowDependencies",
+                                "value": {
+                                    "value": "@concat(''''\n,item().Title,'stagingFileSystem'':''',activity('lookup on sourceEntity list').output.value[0].StagingFileSystem,''', '''\n,item().Title,'stagingDirectory'':''',concat(pipeline().parameters.companyCode,'/',activity('lookup on sourceConnections list').output.value[0].SourceEnvironmentValue,'/',activity('lookup on sourceEntity list').output.value[0].StagingDirectory),''', '''\n,item().Title,'stagingEntityName'':''',item().Title,''''\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "concurrency": 20,
+        "parameters": {
+            "functionalArea": {
+                "type": "string",
+                "defaultValue": "manufacturing"
+            },
+            "companyCode": {
+                "type": "string",
+                "defaultValue": "CTR"
+            },
+            "dataEntityRecord": {
+                "type": "object",
+                "defaultValue": {
+                    "Title": "Manufacturing_jts_job_details",
+                    "DataflowVersion": 0,
+                    "ID": 403,
+                    "OData__ColorTag": null,
+                    "DependsOnId": [
+                        238,
+                        381,
+                        400,
+                        401
+                    ],
+                    "EditorId": 18,
+                    "GUID": "46092a1b-9fbf-4aa7-83ed-253e0a1d77f4",
+                    "LocaliseDateTime": false,
+                    "odata.editLink": "Web/Lists(guid'e0e8fd6f-2fb9-4549-bf35-57c210a24a54')/Items(405)",
+                    "odata.etag": "\"2\"",
+                    "LoadPipelineNameId": 8,
+                    "ServerRedirectedEmbedUri": null,
+                    "Attachments": false,
+                    "Modified": "2023-07-31T04:33:03Z",
+                    "FileSystemObjectType": 0,
+                    "Dataflow": "jts_job_details",
+                    "ComplianceAssetId": null,
+                    "AuthorId": 17,
+                    "Created": "2023-07-28T14:58:35Z",
+                    "ContentTypeId": "0x010005A907429A81E34D8860B89EEDCF641E00AD0EA8004FF34F4FAAB52E16F272C73B",
+                    "SourceEntityCodeId": 383,
+                    "KeyColumn": null,
+                    "odata.type": "SP.Data.LoadEntityListItem",
+                    "odata.id": "f8e8d27a-8a71-420a-9c45-49b8dbf73cfa",
+                    "StageDataFormat": "Delta",
+                    "ServerRedirectedEmbedUrl": "",
+                    "ForceProcessing": false,
+                    "OData__UIVersionString": "2.0",
+                    "stage": 1
+                }
+            },
+            "environmentDetails": {
+                "type": "object",
+                "defaultValue": {
+                    "Id": 6,
+                    "ContentTypeID": "0x01004B969258A969FB46B3FE531B9872A8C7001A74268DC0CFF14498C14BE21B35C9D6",
+                    "ContentType": "Item",
+                    "Title": "carters-dev-synapse-workspace",
+                    "Modified": "2023-07-04T17:27:24Z",
+                    "Created": "2023-07-04T12:41:40Z",
+                    "CreatedById": 11,
+                    "ModifiedById": 17,
+                    "Owshiddenversion": 5,
+                    "Version": "5.0",
+                    "Path": "/sites/CartersSynapseDEV/Lists/SynapseEnvironment",
+                    "ComplianceAssetId": null,
+                    "SharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "SharePointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "SharePointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "TenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "PowerShellFunctionServicePrincipalSecret": "CartersSynapsePowerShellFunctionServicePrincipal",
+                    "FunctionAppURL": "https://carters-dev-synapse-ps.azurewebsites.net",
+                    "DatalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "EnvironmentValue": "DEV",
+                    "KeyvaultURL": "https://carters-dev-synapse.vault.azure.net",
+                    "CompanyCode": "CTR",
+                    "ColorTag": null
+                }
+            },
+            "forceFullReprocess": {
+                "type": "bool",
+                "defaultValue": false
+            }
+        },
+        "variables": {
+            "processData": {
+                "type": "Array",
+                "defaultValue": [
+                    false
+                ]
+            },
+            "dataflowDependencies": {
+                "type": "Array",
+                "defaultValue": []
+            },
+            "presentationDependencies": {
+                "type": "Array"
+            },
+            "pipelineParameters": {
+                "type": "String"
+            },
+            "presentationTableName": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "defaultAdditionalColumns": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}

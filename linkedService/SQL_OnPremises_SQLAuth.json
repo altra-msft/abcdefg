@@ -1,0 +1,49 @@
+{
+    "name": "SQL_OnPremises_SQLAuth",
+    "properties": {
+        "parameters": {
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-kv.vault.azure.net/"
+            },
+            "server": {
+                "type": "string"
+            },
+            "database": {
+                "type": "string"
+            },
+            "user": {
+                "type": "string"
+            },
+            "secret": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "SqlServer",
+        "typeProperties": {
+            "connectionString": "Integrated Security=False;Data Source=@{linkedService().server};Initial Catalog=@{linkedService().database};User ID=@{linkedService().user}",
+            "password": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().secret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "On-PremisesIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,255 @@
+{
+    "name": "invoke-Transform-S3",
+    "properties": {
+        "activities": [
+            {
+                "name": "Switch Dataflow",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "LocalPipelineTriggerTime",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@pipeline().parameters.pipelineParameters.dataflow",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "DailyVehicleUtilisation",
+                            "activities": [
+                                {
+                                    "name": "DailyVehicleUtilisation",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "DailyVehicleUtilisation",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "Database": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).vehicledirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "Entity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).vehiclefileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{concat(\n    pipeline().parameters.pipelineParameters.stagingDirectory\n    ,'/'\n    ,pipeline().parameters.pipelineParameters.rawEntity\n    ,'/v'\n    ,pipeline().parameters.pipelineParameters.dataflowVersion\n)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{toLower(pipeline().parameters.pipelineParameters.rawDirectory)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "processDelta": {
+                                                    "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                                                    "type": "Expression"
+                                                },
+                                                "partitionPath": {
+                                                    "value": "'@{join(take(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),sub(length(split(pipeline().parameters.pipelineParameters.rawDirectory,'/')),3)),'/')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "dailyvehicleutilisation": {
+                                                    "dataLakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileSystem)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "sink1": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "DailyActivityReport",
+                            "activities": [
+                                {
+                                    "name": "DailyActivityReport",
+                                    "type": "ExecuteDataFlow",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "timeout": "0.12:00:00",
+                                        "retry": 0,
+                                        "retryIntervalInSeconds": 30,
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "dataflow": {
+                                            "referenceName": "DailyActivityReport",
+                                            "type": "DataFlowReference",
+                                            "parameters": {
+                                                "driverDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).driverdirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "driverEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).driverfileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vehicleDatabase": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).vehicledirectory}'",
+                                                    "type": "Expression"
+                                                },
+                                                "vehicleEntity": {
+                                                    "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).vehiclefileName}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingFileSystem": {
+                                                    "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                    "type": "Expression"
+                                                },
+                                                "stagingDirectory": {
+                                                    "value": "'@{toLower(\n    concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n        )\n)\n}'",
+                                                    "type": "Expression"
+                                                },
+                                                "rawDirectory": {
+                                                    "value": "'@{toLower(pipeline().parameters.pipelineParameters.rawDirectory)}'",
+                                                    "type": "Expression"
+                                                },
+                                                "processDelta": {
+                                                    "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                                                    "type": "Expression"
+                                                },
+                                                "partitionPath": {
+                                                    "value": "'@{join(take(split(pipeline().parameters.pipelineParameters.rawDirectory,'/'),sub(length(split(pipeline().parameters.pipelineParameters.rawDirectory,'/')),3)),'/')}'",
+                                                    "type": "Expression"
+                                                }
+                                            },
+                                            "datasetParameters": {
+                                                "DailyActivityReport": {
+                                                    "datalakeURL": {
+                                                        "value": "@pipeline().parameters.pipelineParameters.rawDatalakeURL",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileSystem": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileSystem)",
+                                                        "type": "Expression"
+                                                    },
+                                                    "directory": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawDirectory)",
+                                                        "type": "Expression"
+                                                    },
+                                                    "fileName": {
+                                                        "value": "@toLower(pipeline().parameters.pipelineParameters.rawFileName)",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            "linkedServiceParameters": {
+                                                "sink1": {
+                                                    "linkedService": {
+                                                        "datalakeURL": {
+                                                            "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                            "type": "Expression"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "integrationRuntime": {
+                                            "referenceName": "AutoScaleIntegrationRuntime",
+                                            "type": "IntegrationRuntimeReference"
+                                        },
+                                        "traceLevel": "Fine"
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail invoke-Transform-S3",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat(\n    'No dataflow implementation found for '\n    ,pipeline().parameters.pipelineParameters.rawEntity\n    ,'. Dataflow Configured in Load Entiy is '\n    ,pipeline().parameters.pipelineParameters.dataflow\n)",
+                                    "type": "Expression"
+                                },
+                                "errorCode": {
+                                    "value": "'MISSING-DATAFLOW'",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "LocalPipelineTriggerTime",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "_LocalPipelineTriggerTime",
+                    "value": {
+                        "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.LocalTimeZone\n)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object"
+            }
+        },
+        "variables": {
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Transformations/S3"
+        },
+        "annotations": []
+    }
+}

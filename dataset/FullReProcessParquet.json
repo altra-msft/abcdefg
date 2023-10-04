@@ -1,0 +1,39 @@
+{
+    "name": "FullReProcessParquet",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "DataLake",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "datalakeURL": {
+                    "value": "@dataset().dataLakeURL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "dataLakeURL": {
+                "type": "string"
+            },
+            "fileSystem": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "datalake"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "fileSystem": {
+                    "value": "@dataset().fileSystem",
+                    "type": "Expression"
+                }
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    }
+}

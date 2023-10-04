@@ -1,0 +1,209 @@
+{
+    "name": "update-dataflow-version",
+    "properties": {
+        "activities": [
+            {
+                "name": "ForEach Load Entity",
+                "type": "ForEach",
+                "dependsOn": [
+                    {
+                        "activity": "Get Bearer token",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('lookup loadEntity for dataflow').output.value",
+                        "type": "Expression"
+                    },
+                    "batchCount": 10,
+                    "activities": [
+                        {
+                            "name": "Update Dataflow Version in the List",
+                            "description": "Update DataflowVersion in LoadEntity List based on Id ",
+                            "type": "WebActivity",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:10:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": true,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "url": {
+                                    "value": "@concat(\n    pipeline().parameters.pipelineParameters.sharePointURL\n    ,'/_api/web/lists/getbytitle(''LoadEntity'')/items('\n    ,item().ID\n    ,')'\n)",
+                                    "type": "Expression"
+                                },
+                                "connectVia": {
+                                    "referenceName": "AutoScaleIntegrationRuntime",
+                                    "type": "IntegrationRuntimeReference"
+                                },
+                                "method": "POST",
+                                "headers": {
+                                    "Authorization": {
+                                        "value": "@concat('Bearer ',activity('Get Bearer token').output.access_token)",
+                                        "type": "Expression"
+                                    },
+                                    "Accept": {
+                                        "value": "application/json;odata=verbose",
+                                        "type": "Expression"
+                                    },
+                                    "Content-Type": {
+                                        "value": "application/json",
+                                        "type": "Expression"
+                                    },
+                                    "X-HTTP-Method": "MERGE",
+                                    "IF-MATCH": "*"
+                                },
+                                "body": {
+                                    "value": "{\"DataflowVersion\":@{pipeline().parameters.pipelineParameters.dataflowVersion}}",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Get ClientSecret",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "lookup loadEntity for dataflow",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    pipeline().parameters.pipelineParameters.keyvaultURL\n    ,'/secrets/'\n    ,pipeline().parameters.pipelineParameters.sharePointServicePrincipalSecret\n    ,'?api-version=7.0'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "GET",
+                    "authentication": {
+                        "type": "MSI",
+                        "resource": "https://vault.azure.net"
+                    }
+                }
+            },
+            {
+                "name": "Get Bearer token",
+                "description": "Get Bearer token for SharePoint \nupdate it using variable values",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "Get ClientSecret",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:10:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": true,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    'https://accounts.accesscontrol.windows.net/'\n    ,pipeline().parameters.pipelineParameters.tenantId\n    ,'/tokens/OAuth/2'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "POST",
+                    "headers": {
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    "body": {
+                        "value": "@concat(\n    'grant_type=client_credentials&client_id='\n        ,pipeline().parameters.pipelineParameters.sharepointServicePrincipalID\n        ,'@',pipeline().parameters.pipelineParameters.tenantId\n    ,'&client_secret=',activity('Get ClientSecret').output.value\n    ,'&resource=00000003-0000-0ff1-ce00-000000000000/carterholtharvey.sharepoint.com@'\n    ,pipeline().parameters.pipelineParameters.tenantId)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "lookup loadEntity for dataflow",
+                "description": "Get all load entities that are using the dataflow and update the dataflow version.",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SharePointOnlineListSource",
+                        "query": {
+                            "value": "$filter=Dataflow eq '@{pipeline().parameters.pipelineParameters.dataflow}'",
+                            "type": "Expression"
+                        },
+                        "httpRequestTimeout": "00:05:00"
+                    },
+                    "dataset": {
+                        "referenceName": "SharePointList",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "list": "LoadEntity",
+                            "sharepointURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharePointURL",
+                                "type": "Expression"
+                            },
+                            "tenantID": {
+                                "value": "@pipeline().parameters.pipelineParameters.tenantId",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalID": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalSecret": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalSecret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}

@@ -1,0 +1,21 @@
+{
+    "name": "REST_Anonymous",
+    "properties": {
+        "parameters": {
+            "baseuri": {
+                "type": "string"
+            }
+        },
+        "annotations": [],
+        "type": "RestService",
+        "typeProperties": {
+            "url": "@{linkedService().baseuri}",
+            "enableServerCertificateValidation": true,
+            "authenticationType": "Anonymous"
+        },
+        "connectVia": {
+            "referenceName": "AutoScaleIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

@@ -1,0 +1,48 @@
+{
+    "name": "HTTP_Delimited",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "HTTP_Anonymous",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "url": {
+                    "value": "@dataset().url",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "delimiter": {
+                "type": "string"
+            },
+            "url": {
+                "type": "string"
+            },
+            "firstRowHeader": {
+                "type": "bool",
+                "defaultValue": true
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "DelimitedText",
+        "typeProperties": {
+            "location": {
+                "type": "HttpServerLocation"
+            },
+            "columnDelimiter": {
+                "value": "@dataset().delimiter",
+                "type": "Expression"
+            },
+            "escapeChar": "\\",
+            "firstRowAsHeader": {
+                "value": "@dataset().firstRowHeader",
+                "type": "Expression"
+            },
+            "quoteChar": "\""
+        },
+        "schema": []
+    }
+}

@@ -1,0 +1,288 @@
+{
+    "name": "invoke-Present",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Pipeline Run Status",
+                "description": "Get Pipeline Run Status",
+                "type": "WebActivity",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "0.00:20:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "url": {
+                        "value": "@concat(\n    'https://'\n    ,pipeline().DataFactory\n    ,'.dev.azuresynapse.net/queryPipelineRuns?api-version=2020-12-01'\n)",
+                        "type": "Expression"
+                    },
+                    "connectVia": {
+                        "referenceName": "AutoScaleIntegrationRuntime",
+                        "type": "IntegrationRuntimeReference"
+                    },
+                    "method": "POST",
+                    "body": {
+                        "value": "{\n  \"lastUpdatedAfter\": \"@{addHours(pipeline().TriggerTime,-10)}\",\n  \"lastUpdatedBefore\": \"@{pipeline().TriggerTime}\",\n  \"filters\": [\n    {\n      \"operand\": \"PipelineName\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"@{concat('presentFrom-'\n        ,pipeline().parameters.pipelineParameters.stageDataFormat)}\"\n      ]\n    },\n    {\n      \"operand\": \"Status\",\n      \"operator\": \"Equals\",\n      \"values\": [\n        \"InProgress\"\n      ]\n    }\n  ]\n}",
+                        "type": "Expression"
+                    },
+                    "authentication": {
+                        "type": "MSI",
+                        "resource": "https://dev.azuresynapse.net"
+                    }
+                }
+            },
+            {
+                "name": "Filter Pipeline",
+                "description": "Change filter condition...........",
+                "type": "Filter",
+                "dependsOn": [
+                    {
+                        "activity": "Get Pipeline Run Status",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "items": {
+                        "value": "@activity('Get Pipeline Run Status').output.value",
+                        "type": "Expression"
+                    },
+                    "condition": {
+                        "value": "@equals(\n    item().parameters.pipelineParameters\n    , pipeline().parameters.pipelineParameters\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Check Pipeline alrady running",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Filter Pipeline",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(activity('Filter Pipeline').output.FilteredItemsCount, 0)",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set InProgress Pipeline RunID",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "runningPipelineID",
+                                "value": {
+                                    "value": "@activity('Filter Pipeline').output.value[0].runId",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set Present type to waitRun",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "presentType",
+                                "value": {
+                                    "value": "WAIT-RUN",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set PresentType",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "presentType",
+                                "value": {
+                                    "value": "@concat(\n    'PRESENTFROM-'\n    ,toUpper(pipeline().parameters.pipelineParameters.stageDataFormat)\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Switch Stage Data Format",
+                "description": "This switch is to use relevant present from pipeline based on Stage data format. Present from Delta and Parquet is implemented at this stage. ",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "Check Pipeline alrady running",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@concat(\n    'PRESENTFROM'\n    ,'-'\n    ,toUpper(pipeline().parameters.pipelineParameters.stageDataFormat)\n)",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "PRESENTFROM-DELTA",
+                            "activities": [
+                                {
+                                    "name": "Present From Delta",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "presentFrom-Delta",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "PRESENTFROM-PARQUET",
+                            "activities": [
+                                {
+                                    "name": "Present From Parquet",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "presentFrom-Parquet",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "pipelineParameters": {
+                                                "value": "@pipeline().parameters.pipelineParameters",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        },
+                        {
+                            "value": "WAIT-RUN",
+                            "activities": [
+                                {
+                                    "name": "Execute Wait-Run",
+                                    "type": "ExecutePipeline",
+                                    "dependsOn": [],
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "pipeline": {
+                                            "referenceName": "wait-Run",
+                                            "type": "PipelineReference"
+                                        },
+                                        "waitOnCompletion": true,
+                                        "parameters": {
+                                            "runId": {
+                                                "value": "@variables('runningPipelineID')",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ],
+                    "defaultActivities": [
+                        {
+                            "name": "Fail1",
+                            "type": "Fail",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "message": {
+                                    "value": "@concat(\n    'Present from ', json(string(pipeline().parameters.pipelineParameters)).stageDataFormat\n    , 'is not implemented'\n)",
+                                    "type": "Expression"
+                                },
+                                "errorCode": {
+                                    "value": "@concat(\n    'UNKNOW-PRESENT-FORMAT : ', json(string(pipeline().parameters.pipelineParameters)).stageDataFormat\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "stageDataFormat": "Parquet",
+                    "datalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "sourceFileSystem": "2-staging",
+                    "sourceDirectory": "CTR/EDWFileshare/CTRSHOUR_CLOUD_EDW",
+                    "sourceFile": "part-00000-3b71065c-9f66-40d7-890e-fd2c12e17cb6-c000.snappy.parquet",
+                    "destinationFileSystem": "3-presentation",
+                    "destinationDirectory": "CTR_HumanResources/CTRSHOUR_CLOUD_EDW",
+                    "destinationFile": "CTRSHOUR_CLOUD_EDW.parquet",
+                    "mappingFieldsFilter": "SourceEntityNameId eq 20",
+                    "database": "CTR_HumanResources",
+                    "schema": "dbo",
+                    "table": "CTRSHOUR_CLOUD_EDW",
+                    "functionAppURL": "https://carters-nonprod-synapse-ps-fnapp.azurewebsites.net",
+                    "powerShellFunctionServicePrincipalSecret": "CartersSynapsePowerShellFunctionServicePrincipal",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "tenantID": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sharepointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "keyvaultURL": "https://carters-dev-synapse-kv.vault.azure.net"
+                }
+            }
+        },
+        "variables": {
+            "runningPipelineID": {
+                "type": "String"
+            },
+            "presentType": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/_utilities/Synapse"
+        },
+        "annotations": []
+    }
+}

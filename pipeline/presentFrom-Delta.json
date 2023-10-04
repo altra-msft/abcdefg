@@ -1,0 +1,763 @@
+{
+    "name": "presentFrom-Delta",
+    "properties": {
+        "activities": [
+            {
+                "name": "Get Staging file metadata",
+                "type": "GetMetadata",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "Parquet_DataLake",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "datalakeURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.datalakeURL",
+                                "type": "Expression"
+                            },
+                            "fileSystem": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.sourceFileSystem)",
+                                "type": "Expression"
+                            },
+                            "directory": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.sourceDirectory)",
+                                "type": "Expression"
+                            },
+                            "fileName": {
+                                "value": "@pipeline().parameters.pipelineParameters.sourceFile",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "fieldList": [
+                        "columnCount",
+                        "exists",
+                        "itemName",
+                        "itemType",
+                        "lastModified",
+                        "size",
+                        "structure"
+                    ],
+                    "storeSettings": {
+                        "type": "AzureBlobFSReadSettings",
+                        "recursive": true,
+                        "enablePartitionDiscovery": false
+                    },
+                    "formatSettings": {
+                        "type": "ParquetReadSettings"
+                    }
+                }
+            },
+            {
+                "name": "get-FieldMappings",
+                "type": "Lookup",
+                "dependsOn": [],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SharePointOnlineListSource",
+                        "query": {
+                            "value": "$filter = @{pipeline().parameters.pipelineParameters.mappingFieldsFilter}",
+                            "type": "Expression"
+                        },
+                        "httpRequestTimeout": "00:05:00"
+                    },
+                    "dataset": {
+                        "referenceName": "SharePointList",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "list": "FieldMapping",
+                            "sharepointURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharePointURL",
+                                "type": "Expression"
+                            },
+                            "tenantID": {
+                                "value": "@pipeline().parameters.pipelineParameters.tenantID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalID": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharePointServicePrincipalID",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalSecret": {
+                                "value": "@pipeline().parameters.pipelineParameters.sharepointServicePrincipalSecret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "firstRowOnly": false
+                }
+            },
+            {
+                "name": "remove-Fields",
+                "type": "AzureFunctionActivity",
+                "dependsOn": [
+                    {
+                        "activity": "get-FieldMappings",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Get Staging file metadata",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "functionName": "remove-Fields",
+                    "method": "POST",
+                    "body": {
+                        "value": "{\n\"mappingColumns\": @{activity('get-FieldMappings').output.value},\n\"sourceColumns\": @{activity('Get Staging file metadata').output.structure}\n}",
+                        "type": "Expression"
+                    }
+                },
+                "linkedServiceName": {
+                    "referenceName": "PowerShellFunction",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "functionAppURL": {
+                            "value": "@pipeline().parameters.pipelineParameters.functionAppURL",
+                            "type": "Expression"
+                        },
+                        "secretName": {
+                            "value": "@pipeline().parameters.pipelineParameters.powerShellFunctionServicePrincipalSecret",
+                            "type": "Expression"
+                        },
+                        "keyvaultURL": {
+                            "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Copy to presentation",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "remove-Fields",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "7.00:00:00",
+                    "retry": 3,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [
+                    {
+                        "name": "Source",
+                        "value": "@{pipeline().parameters.pipelineParameters.sourceDirectory}"
+                    },
+                    {
+                        "name": "Destination",
+                        "value": "@{pipeline().parameters.pipelineParameters.DestinationFile}"
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlDWSource",
+                        "sqlReaderQuery": {
+                            "value": "@concat('SELECT * FROM\n    OPENROWSET(\n        BULK ''',pipeline().parameters.pipelineParameters.datalakeURL,'/',toLower(pipeline().parameters.pipelineParameters.sourceFileSystem),'/',toLower(pipeline().parameters.pipelineParameters.sourceDirectory),'/'',  FORMAT=''DELTA''\n    ) AS [result]')",
+                            "type": "Expression"
+                        },
+                        "queryTimeout": "02:00:00",
+                        "partitionOption": "None"
+                    },
+                    "sink": {
+                        "type": "ParquetSink",
+                        "storeSettings": {
+                            "type": "AzureBlobFSWriteSettings"
+                        },
+                        "formatSettings": {
+                            "type": "ParquetWriteSettings"
+                        }
+                    },
+                    "enableStaging": false,
+                    "translator": {
+                        "value": "@activity('remove-Fields').output.explicitMapping",
+                        "type": "Expression"
+                    }
+                },
+                "inputs": [
+                    {
+                        "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "database": {
+                                "value": "default",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "Parquet_DataLake",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "datalakeURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.datalakeURL",
+                                "type": "Expression"
+                            },
+                            "fileSystem": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.destinationFileSystem)",
+                                "type": "Expression"
+                            },
+                            "directory": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.destinationDirectory)",
+                                "type": "Expression"
+                            },
+                            "fileName": {
+                                "value": "@pipeline().parameters.pipelineParameters.DestinationFile",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                ]
+            },
+            {
+                "name": "Get Presentation table metadata",
+                "type": "GetMetadata",
+                "dependsOn": [
+                    {
+                        "activity": "Copy to presentation",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "Set table",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.00:15:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "dataset": {
+                        "referenceName": "AzureSynapseAnalyticsServerlessSQLTable",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "database": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.database)",
+                                "type": "Expression"
+                            },
+                            "schema": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.schema)",
+                                "type": "Expression"
+                            },
+                            "table": {
+                                "value": "@toLower(pipeline().parameters.pipelineParameters.table)",
+                                "type": "Expression"
+                            },
+                            "synapseWorkspaceName": {
+                                "value": "@pipeline().DataFactory",
+                                "type": "Expression"
+                            }
+                        }
+                    },
+                    "fieldList": [
+                        "columnCount",
+                        "exists",
+                        "structure"
+                    ]
+                }
+            },
+            {
+                "name": "If Condition - Set createTable",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Get Presentation table metadata",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@activity('Get Presentation table metadata').output.exists",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Set createTable true - new table",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "createTable",
+                                "value": {
+                                    "value": "@bool(1)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "compare-Fields",
+                            "type": "AzureFunctionActivity",
+                            "dependsOn": [
+                                {
+                                    "activity": "Get Presentation file metadata",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 2,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "functionName": "compare-Fields",
+                                "method": "POST",
+                                "body": {
+                                    "value": "{\n\"filemetadata\": @{activity('Get Presentation file metadata').output},\n\"filepath\": \"@{pipeline().parameters.pipelineParameters.destinationDirectory}\",\n\"tablemetadata\": @{activity('Get Presentation table metadata').output}\n}\n\n\n",
+                                    "type": "Expression"
+                                }
+                            },
+                            "linkedServiceName": {
+                                "referenceName": "PowerShellFunction",
+                                "type": "LinkedServiceReference",
+                                "parameters": {
+                                    "functionAppURL": {
+                                        "value": "@pipeline().parameters.pipelineParameters.functionAppURL",
+                                        "type": "Expression"
+                                    },
+                                    "secretName": {
+                                        "value": "@pipeline().parameters.pipelineParameters.powerShellFunctionServicePrincipalSecret",
+                                        "type": "Expression"
+                                    },
+                                    "keyvaultURL": {
+                                        "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                        "type": "Expression"
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Get Presentation file metadata",
+                            "type": "GetMetadata",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 3,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "dataset": {
+                                    "referenceName": "Parquet_DataLake",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "datalakeURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.datalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationFileSystem)",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationDirectory)",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationFile)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                },
+                                "fieldList": [
+                                    "columnCount",
+                                    "exists",
+                                    "itemName",
+                                    "itemType",
+                                    "lastModified",
+                                    "size",
+                                    "structure"
+                                ],
+                                "storeSettings": {
+                                    "type": "AzureBlobFSReadSettings",
+                                    "recursive": true,
+                                    "enablePartitionDiscovery": false
+                                },
+                                "formatSettings": {
+                                    "type": "ParquetReadSettings"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set createTable to function output",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "compare-Fields",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "createTable",
+                                "value": {
+                                    "value": "@activity('compare-Fields').output.createTable",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Condition - action createTable",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "If Condition - Set createTable",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@variables('createTable')",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "create-SparkExternalTable",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 3,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "create-SparkExternalTable",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "database_name": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.database)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "table_name": {
+                                        "value": {
+                                            "value": "@variables('table')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "datalake_domain": {
+                                        "value": {
+                                            "value": "@replace(pipeline().parameters.pipelineParameters.datalakeURL,'https://','')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "file_system": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationFileSystem)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "folder_path": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationDirectory)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "schema_name": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.schema)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true,
+                                "executorSize": null,
+                                "conf": {
+                                    "spark.dynamicAllocation.enabled": null,
+                                    "spark.dynamicAllocation.minExecutors": null,
+                                    "spark.dynamicAllocation.maxExecutors": null
+                                },
+                                "driverSize": null,
+                                "numExecutors": null
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Switch on table meta data error",
+                "type": "Switch",
+                "dependsOn": [
+                    {
+                        "activity": "Get Presentation table metadata",
+                        "dependencyConditions": [
+                            "Failed"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "on": {
+                        "value": "@activity('Get Presentation table metadata').error.errorCode",
+                        "type": "Expression"
+                    },
+                    "cases": [
+                        {
+                            "value": "3500",
+                            "activities": [
+                                {
+                                    "name": "Set createTable true - new database",
+                                    "type": "SetVariable",
+                                    "dependsOn": [],
+                                    "policy": {
+                                        "secureOutput": false,
+                                        "secureInput": false
+                                    },
+                                    "userProperties": [],
+                                    "typeProperties": {
+                                        "variableName": "createTable",
+                                        "value": {
+                                            "value": "@bool(1)",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "If Condition - action createTable and Database",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Switch on table meta data error",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@variables('createTable')",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "create-SparkExternalTableForFirstLoad",
+                            "type": "SynapseNotebook",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "7.00:00:00",
+                                "retry": 3,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "notebook": {
+                                    "referenceName": "create-SparkExternalTable",
+                                    "type": "NotebookReference"
+                                },
+                                "parameters": {
+                                    "database_name": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.database)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "table_name": {
+                                        "value": {
+                                            "value": "@variables('table')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "datalake_domain": {
+                                        "value": {
+                                            "value": "@replace(pipeline().parameters.pipelineParameters.datalakeURL,'https://','')",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "file_system": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationFileSystem)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "folder_path": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.destinationDirectory)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    },
+                                    "schema_name": {
+                                        "value": {
+                                            "value": "@toLower(pipeline().parameters.pipelineParameters.schema)",
+                                            "type": "Expression"
+                                        },
+                                        "type": "string"
+                                    }
+                                },
+                                "snapshot": true,
+                                "executorSize": null,
+                                "conf": {
+                                    "spark.dynamicAllocation.enabled": null,
+                                    "spark.dynamicAllocation.minExecutors": null,
+                                    "spark.dynamicAllocation.maxExecutors": null
+                                },
+                                "driverSize": null,
+                                "numExecutors": null
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Set table",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "table",
+                    "value": {
+                        "value": "@toLower(replace(replace(pipeline().parameters.pipelineParameters.table,'.','_'),' ','_'))",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Set dummySkip",
+                "type": "SetVariable",
+                "dependsOn": [
+                    {
+                        "activity": "If Condition - Set createTable",
+                        "dependencyConditions": [
+                            "Skipped"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "dummySkip",
+                    "value": "'Skip'"
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object"
+            }
+        },
+        "variables": {
+            "_LoadSource": {
+                "type": "String"
+            },
+            "createTable": {
+                "type": "Boolean"
+            },
+            "table": {
+                "type": "String"
+            },
+            "dummySkip": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Presentation"
+        },
+        "annotations": []
+    }
+}

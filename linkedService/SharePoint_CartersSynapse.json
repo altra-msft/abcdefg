@@ -1,0 +1,56 @@
+{
+    "name": "SharePoint_CartersSynapse",
+    "properties": {
+        "parameters": {
+            "sharepointURL": {
+                "type": "string",
+                "defaultValue": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDev"
+            },
+            "tenantID": {
+                "type": "string",
+                "defaultValue": "33bf2332-a9ad-4005-835b-af44567b2122"
+            },
+            "sharepointServicePrincipalID": {
+                "type": "string",
+                "defaultValue": "9220d657-b404-497f-8282-160909458317"
+            },
+            "sharepointServicePrincipalSecret": {
+                "type": "string",
+                "defaultValue": "CartersSynapseSharePointServicePrincipal"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "SharePointOnlineList",
+        "typeProperties": {
+            "siteUrl": "@{linkedService().sharepointURL}",
+            "tenantId": "@{linkedService().tenantID}",
+            "servicePrincipalId": "@{linkedService().sharepointServicePrincipalID}",
+            "servicePrincipalKey": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().sharepointServicePrincipalSecret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "AutoScaleIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    },
+    "type": "Microsoft.Synapse/workspaces/linkedservices"
+}

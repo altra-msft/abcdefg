@@ -1,0 +1,20 @@
+{
+    "name": "DataLake",
+    "properties": {
+        "parameters": {
+            "datalakeURL": {
+                "type": "string",
+                "defaultValue": "https://cartersdevdatalake.dfs.core.windows.net"
+            }
+        },
+        "annotations": [],
+        "type": "AzureBlobFS",
+        "typeProperties": {
+            "url": "@{linkedService().datalakeURL}"
+        },
+        "connectVia": {
+            "referenceName": "AutoScaleIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}

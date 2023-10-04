@@ -1,0 +1,16 @@
+{
+    "name": "synapse_keyvault",
+    "properties": {
+        "parameters": {
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "AzureKeyVault",
+        "typeProperties": {
+            "baseUrl": "@{linkedService().keyvaultURL}"
+        }
+    }
+}

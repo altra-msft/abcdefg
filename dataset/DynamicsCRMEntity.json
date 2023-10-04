@@ -1,0 +1,60 @@
+{
+    "name": "DynamicsCRMEntity",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "DynamicsCRM",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "serviceUri": {
+                    "value": "@dataset().serviceUri",
+                    "type": "Expression"
+                },
+                "servicePrincipalID": {
+                    "value": "@dataset().servicePrincipalID",
+                    "type": "Expression"
+                },
+                "secretName": {
+                    "value": "@dataset().secretName",
+                    "type": "Expression"
+                },
+                "keyvaultURL": {
+                    "value": "@dataset().keyvaultURL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "serviceUri": {
+                "type": "string",
+                "defaultValue": "https://carters.crm6.dynamics.com"
+            },
+            "servicePrincipalID": {
+                "type": "string",
+                "defaultValue": "a9349a6f-901f-4033-843b-1cd359bbb509"
+            },
+            "secretName": {
+                "type": "string",
+                "defaultValue": "CartersCRMServicePrincipalKey"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse.vault.azure.net"
+            },
+            "entity": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "DynamicsCrmEntity",
+        "schema": [],
+        "typeProperties": {
+            "entityName": {
+                "value": "@dataset().entity",
+                "type": "Expression"
+            }
+        }
+    }
+}

@@ -1,0 +1,865 @@
+{
+    "name": "invoke-Transform-Estimate",
+    "properties": {
+        "activities": [
+            {
+                "name": "LocalPipelineTriggerTime",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "_LocalPipelineTriggerTime",
+                    "value": {
+                        "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.LocalTimeZone\n)",
+                        "type": "Expression"
+                    }
+                }
+            },
+            {
+                "name": "Until Dataflow Executed",
+                "type": "Until",
+                "dependsOn": [
+                    {
+                        "activity": "Set executeBroker",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    },
+                    {
+                        "activity": "LocalPipelineTriggerTime",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals(variables('executeSourceBroker'),bool(0))",
+                        "type": "Expression"
+                    },
+                    "activities": [
+                        {
+                            "name": "Switch Dataflow",
+                            "type": "Switch",
+                            "dependsOn": [],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "on": {
+                                    "value": "@toLower(pipeline().parameters.pipelineParameters.dataflow)",
+                                    "type": "Expression"
+                                },
+                                "cases": [
+                                    {
+                                        "value": "dim_estimate",
+                                        "activities": [
+                                            {
+                                                "name": "dim_estimate",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "dim_estimate",
+                                                        "type": "DataFlowReference",
+                                                        "parameters": {
+                                                            "stagingFileSystem": {
+                                                                "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "stagingDirectory": {
+                                                                "value": "'@{toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "processDelta": {
+                                                                "value": "@bool(pipeline().parameters.pipelineParameters.processDelta)",
+                                                                "type": "Expression"
+                                                            }
+                                                        },
+                                                        "datasetParameters": {
+                                                            "Estimates": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_estimatetable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            }
+                                                        },
+                                                        "linkedServiceParameters": {
+                                                            "sinkEstimate": {
+                                                                "linkedService": {
+                                                                    "datalakeURL": {
+                                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                                        "type": "Expression"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "integrationRuntime": {
+                                                        "referenceName": "AutoScaleIntegrationRuntime",
+                                                        "type": "IntegrationRuntimeReference"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            },
+                                            {
+                                                "name": "Set dim_estimate Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('dim_estimate'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail dim_estimate",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('dim_estimate').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('dim_estimate').Error.failureType",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "dim_estimate_building_type",
+                                        "activities": [
+                                            {
+                                                "name": "dim_estimate_building_type",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "dim_estimate_building_type",
+                                                        "type": "DataFlowReference",
+                                                        "parameters": {
+                                                            "stagingFileSystem": {
+                                                                "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "stagingDirectory": {
+                                                                "value": "'@{toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)}'",
+                                                                "type": "Expression"
+                                                            }
+                                                        },
+                                                        "datasetParameters": {
+                                                            "sourceEstimateMasterDataTemp": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_masterdata_temptable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            }
+                                                        },
+                                                        "linkedServiceParameters": {
+                                                            "sinkBuildingType": {
+                                                                "linkedService": {
+                                                                    "datalakeURL": {
+                                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                                        "type": "Expression"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "integrationRuntime": {
+                                                        "referenceName": "AutoScaleIntegrationRuntime",
+                                                        "type": "IntegrationRuntimeReference"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            },
+                                            {
+                                                "name": "Set dim_estimate_building_type Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_building_type",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('dim_estimate_building_type'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail dim_estimate_building_type",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_building_type",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('dim_estimate_building_type').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('dim_estimate_building_type').Error.failureType",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "dim_estimate_status",
+                                        "activities": [
+                                            {
+                                                "name": "dim_estimate_status",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "dim_estimate_status",
+                                                        "type": "DataFlowReference",
+                                                        "parameters": {
+                                                            "stagingFileSystem": {
+                                                                "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "stagingDirectory": {
+                                                                "value": "'@{toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)}'",
+                                                                "type": "Expression"
+                                                            }
+                                                        },
+                                                        "datasetParameters": {
+                                                            "sourceEstimateMasterDataTemp": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_masterdata_temptable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            }
+                                                        },
+                                                        "linkedServiceParameters": {
+                                                            "sinkEstimateStatus": {
+                                                                "linkedService": {
+                                                                    "datalakeURL": {
+                                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                                        "type": "Expression"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "integrationRuntime": {
+                                                        "referenceName": "AutoScaleIntegrationRuntime",
+                                                        "type": "IntegrationRuntimeReference"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            },
+                                            {
+                                                "name": "Set dim_estimate_status Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_status",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('dim_estimate_status'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail dim_estimate_status",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_status",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('dim_estimate_status').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('dim_estimate_status').Error.failureType",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "dim_estimate_type",
+                                        "activities": [
+                                            {
+                                                "name": "dim_estimate_type",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "dim_estimate_type",
+                                                        "type": "DataFlowReference",
+                                                        "parameters": {
+                                                            "stagingFileSystem": {
+                                                                "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "stagingDirectory": {
+                                                                "value": "'@{toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)}'",
+                                                                "type": "Expression"
+                                                            }
+                                                        },
+                                                        "datasetParameters": {
+                                                            "sourceEstimateMasterDataTemp": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_masterdata_temptable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            }
+                                                        },
+                                                        "linkedServiceParameters": {
+                                                            "sinkEstimateType": {
+                                                                "linkedService": {
+                                                                    "datalakeURL": {
+                                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                                        "type": "Expression"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "integrationRuntime": {
+                                                        "referenceName": "AutoScaleIntegrationRuntime",
+                                                        "type": "IntegrationRuntimeReference"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            },
+                                            {
+                                                "name": "Set dim_estimate_type Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_type",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('dim_estimate_type'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail dim_estimate_type",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "dim_estimate_type",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('dim_estimate_type').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('dim_estimate_type').Error.failureType",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "value": "estimate_strike_rate",
+                                        "activities": [
+                                            {
+                                                "name": "estimate_strike_rate",
+                                                "type": "ExecuteDataFlow",
+                                                "dependsOn": [],
+                                                "policy": {
+                                                    "timeout": "0.12:00:00",
+                                                    "retry": 0,
+                                                    "retryIntervalInSeconds": 30,
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "dataflow": {
+                                                        "referenceName": "estimate_strike_rate",
+                                                        "type": "DataFlowReference",
+                                                        "parameters": {
+                                                            "stagingFileSystem": {
+                                                                "value": "'@{pipeline().parameters.pipelineParameters.stagingFileSystem}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "stagingDirectory": {
+                                                                "value": "'@{toLower(\n     concat(\n        pipeline().parameters.pipelineParameters.stagingDirectory\n        ,'/'\n        ,pipeline().parameters.pipelineParameters.rawEntity\n        ,'/v'\n        ,pipeline().parameters.pipelineParameters.dataflowVersion\n    )\n)}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "database": {
+                                                                "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).manufacturingorderdirectory}'",
+                                                                "type": "Expression"
+                                                            },
+                                                            "entity": {
+                                                                "value": "'@{json(pipeline().parameters.pipelineParameters.presentationDependencies).manufacturingorderfileName}'",
+                                                                "type": "Expression"
+                                                            }
+                                                        },
+                                                        "datasetParameters": {
+                                                            "sourceEstimate": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_estimatetable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            },
+                                                            "sourceEmsMasterData": {
+                                                                "database": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.sqlDatabase",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "schema": {
+                                                                    "value": "@pipeline().parameters.pipelineParameters.schema",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "table": {
+                                                                    "value": "@json(pipeline().parameters.pipelineParameters.dataflowDependencies).ems_masterdata_temptable",
+                                                                    "type": "Expression"
+                                                                },
+                                                                "synapseWorkspaceName": {
+                                                                    "value": "@pipeline().DataFactory",
+                                                                    "type": "Expression"
+                                                                }
+                                                            }
+                                                        },
+                                                        "linkedServiceParameters": {
+                                                            "sinkEstimateStrikeRate": {
+                                                                "linkedService": {
+                                                                    "datalakeURL": {
+                                                                        "value": "@pipeline().parameters.pipelineParameters.stagingDatalakeURL",
+                                                                        "type": "Expression"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    "integrationRuntime": {
+                                                        "referenceName": "AutoScaleIntegrationRuntime",
+                                                        "type": "IntegrationRuntimeReference"
+                                                    },
+                                                    "traceLevel": "Fine"
+                                                }
+                                            },
+                                            {
+                                                "name": "Set estimate_strike_rate Error Details",
+                                                "type": "SetVariable",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "estimate_strike_rate",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "policy": {
+                                                    "secureOutput": false,
+                                                    "secureInput": false
+                                                },
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "variableName": "errorMessage",
+                                                    "value": {
+                                                        "value": "@string(activity('estimate_strike_rate'))",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "name": "Fail estimate_strike_rate",
+                                                "type": "Fail",
+                                                "dependsOn": [
+                                                    {
+                                                        "activity": "estimate_strike_rate",
+                                                        "dependencyConditions": [
+                                                            "Failed"
+                                                        ]
+                                                    }
+                                                ],
+                                                "userProperties": [],
+                                                "typeProperties": {
+                                                    "message": {
+                                                        "value": "@activity('estimate_strike_rate').Error.message",
+                                                        "type": "Expression"
+                                                    },
+                                                    "errorCode": {
+                                                        "value": "@activity('estimate_strike_rate').Error.failureType",
+                                                        "type": "Expression"
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "defaultActivities": [
+                                    {
+                                        "name": "Fail invoke-Transform-Estimate-NodataFlow",
+                                        "type": "Fail",
+                                        "dependsOn": [],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "message": {
+                                                "value": "@concat(\n    'No dataflow implementation found for '\n    ,pipeline().parameters.pipelineParameters.rawEntity\n    ,'. Dataflow Configured in Load Entiy is '\n    ,pipeline().parameters.pipelineParameters.dataflow\n)",
+                                                "type": "Expression"
+                                            },
+                                            "errorCode": {
+                                                "value": "'MISSING-DATAFLOW'",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "check key error Failure",
+                            "type": "IfCondition",
+                            "dependsOn": [
+                                {
+                                    "activity": "Switch Dataflow",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "userProperties": [],
+                            "typeProperties": {
+                                "expression": {
+                                    "value": "@and(\n    not(empty(variables('errorMessage')))\n    ,contains(\n        json(variables('errorMessage')).Error.message\n        ,'Resolving CosmosDB path has failed with error ''Key not found''')\n        \n)",
+                                    "type": "Expression"
+                                },
+                                "ifFalseActivities": [
+                                    {
+                                        "name": "Fail invoke-Transform-Estimate",
+                                        "type": "Fail",
+                                        "dependsOn": [
+                                            {
+                                                "activity": "Set executeBroker for failure",
+                                                "dependencyConditions": [
+                                                    "Succeeded"
+                                                ]
+                                            }
+                                        ],
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "message": {
+                                                "value": "@json(variables('errorMessage')).Error.message",
+                                                "type": "Expression"
+                                            },
+                                            "errorCode": {
+                                                "value": "@json(variables('errorMessage')).Error.failureType",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "name": "Set executeBroker for failure",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "executeSourceBroker",
+                                            "value": {
+                                                "value": "@bool(0)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ],
+                                "ifTrueActivities": [
+                                    {
+                                        "name": "Set executeBroker for rerun",
+                                        "type": "SetVariable",
+                                        "dependsOn": [],
+                                        "policy": {
+                                            "secureOutput": false,
+                                            "secureInput": false
+                                        },
+                                        "userProperties": [],
+                                        "typeProperties": {
+                                            "variableName": "executeSourceBroker",
+                                            "value": {
+                                                "value": "@bool(1)",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "name": "Set executeBroker for success",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Switch Dataflow",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "executeSourceBroker",
+                                "value": {
+                                    "value": "@bool(0)",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "timeout": "0.12:00:00"
+                }
+            },
+            {
+                "name": "Set executeBroker",
+                "type": "SetVariable",
+                "dependsOn": [],
+                "policy": {
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "variableName": "executeSourceBroker",
+                    "value": {
+                        "value": "@bool(1)",
+                        "type": "Expression"
+                    }
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "rawDatalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "stageDataFormat": "Delta",
+                    "dataflow": "dim_estimate",
+                    "dataflowVersion": "0",
+                    "processDelta": "True",
+                    "loadEntityId": "335",
+                    "keyVaultURL": "https://carters-dev-synapse.vault.azure.net",
+                    "sharePointURL": "https://carterholtharvey.sharepoint.com/sites/CartersSynapseDEV",
+                    "tenantId": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "sharePointServicePrincipalSecret": "CartersSynapseSharePointServicePrincipal",
+                    "sharepointServicePrincipalID": "9220d657-b404-497f-8282-160909458317",
+                    "sourceName": "Estimate",
+                    "loadType": "FULL",
+                    "rawFileSystem": "1-raw",
+                    "rawDirectory": "/Estimate",
+                    "rawFileName": "ctr_analytics",
+                    "rawEntity": "dim_estimate",
+                    "stagingDatalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "stagingFileSystem": "2-staging",
+                    "stagingDirectory": "CTR/TEST/Estimate/ctr_analytics",
+                    "database": "ctr_sales",
+                    "schema": "dbo",
+                    "sqlDatabase": "ctr_analytics",
+                    "keyColumns": "",
+                    "localiseDateTime": "False",
+                    "dataflowDependencies": "{'dim_estimatestagingFileSystem':'2-staging', 'dim_estimatestagingDirectory':'CTR/TEST/Estimate/ctr_analytics', 'dim_estimatestagingEntityName':'dim_estimate','ems_estimaterawFileSystem':'1-raw','ems_estimaterawDirectory':'/Estimate','ems_estimatetable':'ems_estimate','ems_estimaterawFileName':'ctr_analytics'}",
+                    "presentationDependencies": "{}"
+                }
+            }
+        },
+        "variables": {
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "executeSourceBroker": {
+                "type": "Boolean"
+            },
+            "errorMessage": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Transformations/Estimate"
+        },
+        "annotations": []
+    }
+}

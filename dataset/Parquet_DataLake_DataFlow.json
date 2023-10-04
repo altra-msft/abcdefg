@@ -1,0 +1,46 @@
+{
+    "name": "Parquet_DataLake_DataFlow",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "DataLake",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "datalakeURL": {
+                    "value": "@dataset().dataLakeURL",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "dataLakeURL": {
+                "type": "string"
+            },
+            "fileSystem": {
+                "type": "string"
+            },
+            "directory": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "datalake"
+        },
+        "annotations": [],
+        "type": "Parquet",
+        "typeProperties": {
+            "location": {
+                "type": "AzureBlobFSLocation",
+                "folderPath": {
+                    "value": "@dataset().directory",
+                    "type": "Expression"
+                },
+                "fileSystem": {
+                    "value": "@dataset().fileSystem",
+                    "type": "Expression"
+                }
+            },
+            "compressionCodec": "snappy"
+        },
+        "schema": []
+    }
+}

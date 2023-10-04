@@ -1,0 +1,55 @@
+{
+    "name": "SQL_OnPremises_WindowsAuth",
+    "properties": {
+        "parameters": {
+            "server": {
+                "type": "string",
+                "defaultValue": "k2-prod-db-v.chhnet.net"
+            },
+            "database": {
+                "type": "string",
+                "defaultValue": "CartersiBusDB"
+            },
+            "user": {
+                "type": "string",
+                "defaultValue": "svcCTRSynapseDEV@chhnet.net"
+            },
+            "secret": {
+                "type": "string",
+                "defaultValue": "svcCTRSynapse"
+            },
+            "keyvaultURL": {
+                "type": "string",
+                "defaultValue": "https://carters-dev-synapse-kv.vault.azure.net/"
+            }
+        },
+        "annotations": [],
+        "type": "SqlServer",
+        "typeProperties": {
+            "connectionString": "Integrated Security=True;Data Source=@{linkedService().server};Initial Catalog=@{linkedService().database}",
+            "userName": "@{linkedService().user}",
+            "password": {
+                "type": "AzureKeyVaultSecret",
+                "store": {
+                    "referenceName": "synapse_keyvault",
+                    "type": "LinkedServiceReference",
+                    "parameters": {
+                        "keyvaultURL": {
+                            "value": "@linkedService().keyvaultURL",
+                            "type": "Expression"
+                        }
+                    }
+                },
+                "secretName": {
+                    "value": "@linkedService().secret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "connectVia": {
+            "referenceName": "On-PremisesIntegrationRuntime",
+            "type": "IntegrationRuntimeReference"
+        }
+    },
+    "type": "Microsoft.Synapse/workspaces/linkedservices"
+}

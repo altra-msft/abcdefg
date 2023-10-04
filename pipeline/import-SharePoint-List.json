@@ -1,0 +1,589 @@
+{
+    "name": "import-SharePoint-List",
+    "properties": {
+        "activities": [
+            {
+                "name": "Check Load Type",
+                "type": "IfCondition",
+                "dependsOn": [],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@equals('FULL', toUpper(pipeline().parameters.pipelineParameters.loadType))",
+                        "type": "Expression"
+                    },
+                    "ifFalseActivities": [
+                        {
+                            "name": "Lookup Latest File in Raw",
+                            "type": "Lookup",
+                            "dependsOn": [],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([result].filepath()) as latestFile\nFROM\n    OPENROWSET(\n        BULK '''\n        ,pipeline().parameters.pipelineParameters.datalakeURL\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.fileSystem)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.rawDirectory)\n        ,'/'\n        ,toLower(pipeline().parameters.pipelineParameters.table)\n        ,'/year=*/month=*/day=*/*.parquet'', FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Lookup Latest Record in Raw",
+                            "type": "Lookup",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest File in Raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.00:20:00",
+                                "retry": 1,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SqlDWSource",
+                                    "sqlReaderQuery": {
+                                        "value": "@concat('SELECT\n    max([',pipeline().parameters.pipelineParameters.watermarkField,']) as watermarkValue\nFROM\n    OPENROWSET(\n        BULK ''',activity('Lookup Latest File in Raw').output.firstRow.latestFile,''', FORMAT=''PARQUET''\n    ) AS [result]')",
+                                        "type": "Expression"
+                                    },
+                                    "queryTimeout": "02:00:00",
+                                    "partitionOption": "None"
+                                },
+                                "dataset": {
+                                    "referenceName": "AzureSynapseAnalyticsServerlessSQLQuery",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "database": {
+                                            "value": "default",
+                                            "type": "Expression"
+                                        },
+                                        "synapseWorkspaceName": {
+                                            "value": "@pipeline().DataFactory",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set loadStart from latest record in raw",
+                            "description": "",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest Record in Raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadStart",
+                                "value": {
+                                    "value": "@if(\n    equals('WINDOWED'\n        , toUpper(pipeline().parameters.pipelineParameters.loadType)\n    )\n    ,formatDateTime(activity('Lookup Latest Record in Raw').output.firstRow.watermarkValue, 'yyyy-MM-dd')\n    ,activity('Lookup Latest Record in Raw').output.firstRow.watermarkValue\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set loadQuery",
+                            "description": "Load query is set based on loadType\nWhen LoadType is 'INCREMENTAL'\nquery is \n\"Select * from sourceTable where WATERMARKCOLUMN > LOADSTARTDATE\"\n\nWhen LoadType is 'WINDOWED'\nquery is  \n\"Select * from sourceTable where WATERMARKCOLUMN > LOADSTARTDATE and WATERMARKCOLUMN <= LOADSTART + 1 DAY\"",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set loadStart from latest record in raw",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadQuery",
+                                "value": {
+                                    "value": "@concat(\n    '$filter='\n    ,pipeline().parameters.pipelineParameters.watermarkField\n    ,' gt datetime'''\n    ,formatDateTime(variables('loadStart'), 'yyyy-MM-ddTHH:mm:ss'),'''')",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set loadQuery for initial load",
+                            "description": "Initial Load query will load full data from source irrespective of LoadType",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Lookup Latest File in Raw",
+                                    "dependencyConditions": [
+                                        "Failed"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadQuery",
+                                "value": {
+                                    "value": "@concat('')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ],
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set loadQuery for full load",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "loadQuery",
+                                "value": {
+                                    "value": "@concat('')",
+                                    "type": "Expression"
+                                }
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "Check Source For Data",
+                "type": "Lookup",
+                "dependsOn": [
+                    {
+                        "activity": "Check Load Type",
+                        "dependencyConditions": [
+                            "Completed"
+                        ]
+                    }
+                ],
+                "policy": {
+                    "timeout": "0.12:00:00",
+                    "retry": 0,
+                    "retryIntervalInSeconds": 30,
+                    "secureOutput": false,
+                    "secureInput": false
+                },
+                "userProperties": [],
+                "typeProperties": {
+                    "source": {
+                        "type": "SharePointOnlineListSource",
+                        "query": {
+                            "value": "@variables('loadQuery')",
+                            "type": "Expression"
+                        },
+                        "httpRequestTimeout": "00:05:00"
+                    },
+                    "dataset": {
+                        "referenceName": "SharePointList",
+                        "type": "DatasetReference",
+                        "parameters": {
+                            "list": {
+                                "value": "@pipeline().parameters.pipelineParameters.table",
+                                "type": "Expression"
+                            },
+                            "sharepointURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.server",
+                                "type": "Expression"
+                            },
+                            "tenantID": {
+                                "value": "@pipeline().parameters.pipelineParameters.tenantId",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalID": {
+                                "value": "@pipeline().parameters.pipelineParameters.user",
+                                "type": "Expression"
+                            },
+                            "sharepointServicePrincipalSecret": {
+                                "value": "@pipeline().parameters.pipelineParameters.secret",
+                                "type": "Expression"
+                            },
+                            "keyvaultURL": {
+                                "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                "type": "Expression"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "name": "Load Data",
+                "description": "Check if source system have data to load",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "Check Source For Data",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "userProperties": [],
+                "typeProperties": {
+                    "expression": {
+                        "value": "@or(\n    not(empty(activity('Check Source For Data').output.firstRow))\n    ,bool(\n        coalesce(\n            pipeline().parameters.pipelineParameters.forceLoad\n            ,false\n        )\n    )\n)\n",
+                        "type": "Expression"
+                    },
+                    "ifTrueActivities": [
+                        {
+                            "name": "Set rawDirectory",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set _LocalPipelineTriggerTime",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "rawDirectory",
+                                "value": {
+                                    "value": "@concat(\n    pipeline().parameters.pipelineParameters.rawDirectory\n    ,'/'\n    ,pipeline().parameters.pipelineParameters.table\n    ,'/year=',formatDateTime(variables('_LocalPipelineTriggerTime'),'yyyy')\n    ,'/month=',formatDateTime(variables('_LocalPipelineTriggerTime'),'MM')\n    ,'/day=',formatDateTime(variables('_LocalPipelineTriggerTime'),'dd')\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set fileName",
+                            "type": "SetVariable",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set _LocalPipelineTriggerTime",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "fileName",
+                                "value": {
+                                    "value": "@concat(\n    pipeline().parameters.pipelineParameters.table\n    ,'_'\n    ,formatDateTime(\n        variables('_LocalPipelineTriggerTime')\n        ,'yyyy-MM-dd_HH-mm-ss'\n    )\n    ,'.parquet'\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Set _LocalPipelineTriggerTime",
+                            "type": "SetVariable",
+                            "dependsOn": [],
+                            "policy": {
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "variableName": "_LocalPipelineTriggerTime",
+                                "value": {
+                                    "value": "@convertFromUtc(\n    pipeline().TriggerTime\n    ,pipeline().parameters.pipelineParameters.localTimeZone\n)",
+                                    "type": "Expression"
+                                }
+                            }
+                        },
+                        {
+                            "name": "Copy SharePoint List",
+                            "type": "Copy",
+                            "dependsOn": [
+                                {
+                                    "activity": "Set rawDirectory",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                },
+                                {
+                                    "activity": "Set fileName",
+                                    "dependencyConditions": [
+                                        "Succeeded"
+                                    ]
+                                }
+                            ],
+                            "policy": {
+                                "timeout": "0.12:00:00",
+                                "retry": 0,
+                                "retryIntervalInSeconds": 30,
+                                "secureOutput": false,
+                                "secureInput": false
+                            },
+                            "userProperties": [],
+                            "typeProperties": {
+                                "source": {
+                                    "type": "SharePointOnlineListSource",
+                                    "additionalColumns": [
+                                        {
+                                            "name": "_LoadTimestamp",
+                                            "value": {
+                                                "value": "@formatDateTime(utcNow(),'u')",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadWorkspace",
+                                            "value": {
+                                                "value": "@pipeline().DataFactory",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipeline",
+                                            "value": {
+                                                "value": "@pipeline().Pipeline",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineRunId",
+                                            "value": {
+                                                "value": "@pipeline().RunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerId",
+                                            "value": {
+                                                "value": "@pipeline().TriggerId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTrigger",
+                                            "value": {
+                                                "value": "@pipeline().TriggerName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerType",
+                                            "value": {
+                                                "value": "@pipeline().TriggerType",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggerTime",
+                                            "value": {
+                                                "value": "@pipeline().TriggerTime",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByPipeline",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineRunId",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadPipelineTriggeredByRunId",
+                                            "value": {
+                                                "value": "@pipeline()?.TriggeredByPipelineName",
+                                                "type": "Expression"
+                                            }
+                                        },
+                                        {
+                                            "name": "_LoadSource",
+                                            "value": {
+                                                "value": "@pipeline().parameters.pipelineParameters.rawDirectory",
+                                                "type": "Expression"
+                                            }
+                                        }
+                                    ],
+                                    "query": {
+                                        "value": "@variables('loadQuery')",
+                                        "type": "Expression"
+                                    },
+                                    "httpRequestTimeout": "00:05:00"
+                                },
+                                "sink": {
+                                    "type": "ParquetSink",
+                                    "storeSettings": {
+                                        "type": "AzureBlobFSWriteSettings"
+                                    },
+                                    "formatSettings": {
+                                        "type": "ParquetWriteSettings"
+                                    }
+                                },
+                                "enableStaging": false,
+                                "translator": {
+                                    "type": "TabularTranslator",
+                                    "typeConversion": true,
+                                    "typeConversionSettings": {
+                                        "allowDataTruncation": true,
+                                        "treatBooleanAsNumber": false
+                                    }
+                                }
+                            },
+                            "inputs": [
+                                {
+                                    "referenceName": "SharePointList",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "list": {
+                                            "value": "@pipeline().parameters.pipelineParameters.table",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.server",
+                                            "type": "Expression"
+                                        },
+                                        "tenantID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.tenantId",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalID": {
+                                            "value": "@pipeline().parameters.pipelineParameters.user",
+                                            "type": "Expression"
+                                        },
+                                        "sharepointServicePrincipalSecret": {
+                                            "value": "@pipeline().parameters.pipelineParameters.secret",
+                                            "type": "Expression"
+                                        },
+                                        "keyvaultURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.keyvaultURL",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ],
+                            "outputs": [
+                                {
+                                    "referenceName": "Parquet_DataLake",
+                                    "type": "DatasetReference",
+                                    "parameters": {
+                                        "datalakeURL": {
+                                            "value": "@pipeline().parameters.pipelineParameters.datalakeURL",
+                                            "type": "Expression"
+                                        },
+                                        "fileSystem": {
+                                            "value": "@pipeline().parameters.pipelineParameters.fileSystem",
+                                            "type": "Expression"
+                                        },
+                                        "directory": {
+                                            "value": "@toLower(variables('rawDirectory'))",
+                                            "type": "Expression"
+                                        },
+                                        "fileName": {
+                                            "value": "@variables('fileName')",
+                                            "type": "Expression"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }
+        ],
+        "parameters": {
+            "pipelineParameters": {
+                "type": "object",
+                "defaultValue": {
+                    "datalakeURL": "https://cartersdevdatalake.dfs.core.windows.net",
+                    "sourceName": "CartersFinanceMasterDataDev",
+                    "functionalArea": "Finance",
+                    "companyCode": "CTR",
+                    "fileSystem": "1-raw",
+                    "forceLoad": "False",
+                    "user": "9220d657-b404-497f-8282-160909458317",
+                    "secret": "CartersSynapseSharePointServicePrincipal",
+                    "watermarkField": "Modified",
+                    "loadType": "Incremental",
+                    "schema": "",
+                    "authType": "",
+                    "server": "https://carterholtharvey.sharepoint.com/sites/CartersFinanceMasterDataDev",
+                    "entity": "Account_Manager_Budgets",
+                    "database": "",
+                    "directory": "",
+                    "localTimeZone": "New Zealand Standard Time",
+                    "IR": "onPremises",
+                    "sourceType": "SharePoint",
+                    "category": "List",
+                    "fileType": "",
+                    "delimiter": "",
+                    "connectionString": "",
+                    "apiPublisher": "",
+                    "apiGroup": "",
+                    "connectionTenant": "33bf2332-a9ad-4005-835b-af44567b2122",
+                    "keyvaultURL": "https://carters-dev-synapse-kv.vault.azure.net/"
+                }
+            }
+        },
+        "variables": {
+            "loadQuery": {
+                "type": "String"
+            },
+            "loadStart": {
+                "type": "String"
+            },
+            "_LocalPipelineTriggerTime": {
+                "type": "String"
+            },
+            "rawDirectory": {
+                "type": "String"
+            },
+            "fileName": {
+                "type": "String"
+            }
+        },
+        "folder": {
+            "name": "_framework/Sources"
+        },
+        "annotations": []
+    }
+}

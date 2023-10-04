@@ -1,0 +1,70 @@
+{
+    "name": "SQL_OnPremises_SQLAuth",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "SQL_OnPremises_SQLAuth",
+            "type": "LinkedServiceReference",
+            "parameters": {
+                "keyvaultURL": {
+                    "value": "@dataset().keyvaultURL",
+                    "type": "Expression"
+                },
+                "server": {
+                    "value": "@dataset().server",
+                    "type": "Expression"
+                },
+                "database": {
+                    "value": "@dataset().database",
+                    "type": "Expression"
+                },
+                "user": {
+                    "value": "@dataset().user",
+                    "type": "Expression"
+                },
+                "secret": {
+                    "value": "@dataset().secret",
+                    "type": "Expression"
+                }
+            }
+        },
+        "parameters": {
+            "server": {
+                "type": "string"
+            },
+            "database": {
+                "type": "string"
+            },
+            "schema": {
+                "type": "string"
+            },
+            "table": {
+                "type": "string"
+            },
+            "user": {
+                "type": "string"
+            },
+            "secret": {
+                "type": "string"
+            },
+            "keyvaultURL": {
+                "type": "string"
+            }
+        },
+        "folder": {
+            "name": "generic sources"
+        },
+        "annotations": [],
+        "type": "SqlServerTable",
+        "schema": [],
+        "typeProperties": {
+            "schema": {
+                "value": "@dataset().schema",
+                "type": "Expression"
+            },
+            "table": {
+                "value": "@dataset().table",
+                "type": "Expression"
+            }
+        }
+    }
+}

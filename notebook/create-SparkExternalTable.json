@@ -1,0 +1,117 @@
+{
+    "name": "create-SparkExternalTable",
+    "properties": {
+        "folder": {
+            "name": "_utilities"
+        },
+        "nbformat": 4,
+        "nbformat_minor": 2,
+        "bigDataPool": {
+            "referenceName": "sparkDefault",
+            "type": "BigDataPoolReference"
+        },
+        "sessionProperties": {
+            "driverMemory": "56g",
+            "driverCores": 8,
+            "executorMemory": "56g",
+            "executorCores": 8,
+            "numExecutors": 1,
+            "conf": {
+                "spark.dynamicAllocation.enabled": "true",
+                "spark.dynamicAllocation.minExecutors": "1",
+                "spark.dynamicAllocation.maxExecutors": "4",
+                "spark.autotune.trackingId": "12510ef1-f484-42f7-89cc-1279bc400015"
+            }
+        },
+        "metadata": {
+            "saveOutput": true,
+            "enableDebugMode": false,
+            "kernelspec": {
+                "name": "synapse_pyspark",
+                "display_name": "Synapse PySpark"
+            },
+            "language_info": {
+                "name": "python"
+            },
+            "a365ComputeOptions": {
+                "id": "/subscriptions/4219cb28-e035-4559-a02e-1da3d82c6cbc/resourceGroups/carters-dev-analytics-synapse-rg/providers/Microsoft.Synapse/workspaces/carters-dev-analytics-synapse-workspace/bigDataPools/sparkDefault",
+                "name": "sparkDefault",
+                "type": "Spark",
+                "endpoint": "https://carters-dev-analytics-synapse-workspace.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkDefault",
+                "auth": {
+                    "type": "AAD",
+                    "authResource": "https://dev.azuresynapse.net"
+                },
+                "sparkVersion": "3.3",
+                "nodeCount": 3,
+                "cores": 8,
+                "memory": 56
+            },
+            "sessionKeepAliveTimeout": 30
+        },
+        "cells": [
+            {
+                "cell_type": "markdown",
+                "metadata": {
+                    "nteract": {
+                        "transient": {
+                            "deleting": false
+                        }
+                    }
+                },
+                "source": [
+                    "# Create an unmanaged (external) Spark table\n",
+                    "This notebook creates an unmanaged (also known as external) table from Spark and its contaoining database if required.\n",
+                    "The table is created in a datalake folder which may exist already (so you can attach to existing data)."
+                ]
+            },
+            {
+                "cell_type": "code",
+                "metadata": {
+                    "jupyter": {
+                        "source_hidden": false,
+                        "outputs_hidden": false
+                    },
+                    "nteract": {
+                        "transient": {
+                            "deleting": false
+                        }
+                    },
+                    "collapsed": true,
+                    "tags": [
+                        "parameters"
+                    ]
+                },
+                "source": [
+                    "database_name = \"ctr_manufacturing\"\r\n",
+                    "table_name = \"dailyActivityReport_hist\"\r\n",
+                    "datalake_domain = \"cartersdevdatalake.dfs.core.windows.net\"\r\n",
+                    "file_system = \"3-presentation\"\r\n",
+                    "folder_path = \"ctr_manufacturing/dailyActivityReport_hist\""
+                ],
+                "outputs": [],
+                "execution_count": 9
+            },
+            {
+                "cell_type": "code",
+                "source": [
+                    "#Create Database\r\n",
+                    "spark.sql(\"CREATE DATABASE IF NOT EXISTS \" + database_name)\r\n",
+                    "\r\n",
+                    "#Use DB\r\n",
+                    "spark.sql(\"USE \" + database_name)\r\n",
+                    "\r\n",
+                    "#Drop table\r\n",
+                    "spark.sql(\"DROP TABLE IF EXISTS \" + table_name)\r\n",
+                    "\r\n",
+                    "# df = spark.read.parquet('abfss://3-presentation@cartersdevdatalake.dfs.core.windows.net/ctr_manufacturing/vehicle')\r\n",
+                    "\r\n",
+                    "#create table\r\n",
+                    "spark.sql(\"CREATE TABLE \" + table_name + \" USING PARQUET LOCATION 'abfss://\" + file_system + \"@\" + datalake_domain + \"/\" + folder_path + \"' OPTIONS ('compression'='snappy')\")"
+                ],
+                "outputs": [],
+                "execution_count": 10
+            }
+        ]
+    }
+}
