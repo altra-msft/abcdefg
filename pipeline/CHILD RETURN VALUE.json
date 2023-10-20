@@ -25,6 +25,13 @@
 								"type": "String",
 								"content": "hello world"
 							}
+						},
+						{
+							"key": "efsff",
+							"value": {
+								"type": "Expression",
+								"content": "dfdfdfd"
+							}
 						}
 					],
 					"setSystemVariable": true
