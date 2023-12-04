@@ -12,6 +12,13 @@
 					"type": "SecureString",
 					"value": "**********"
 				}
+			},
+			"secureStringTest2": {
+				"type": "securestring",
+				"value": {
+					"type": "SecureString",
+					"value": "**********"
+				}
 			}
 		}
 	},
