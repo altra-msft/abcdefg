@@ -5,6 +5,13 @@
 			"dark": {
 				"type": "string",
 				"value": "palladin"
+			},
+			"securestringtest": {
+				"type": "securestring",
+				"value": {
+					"type": "SecureString",
+					"value": "**********"
+				}
 			}
 		}
 	},
